@@ -48,6 +48,38 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chal
 .swatch{width:clamp(44px,10vw,64px);height:clamp(44px,10vw,64px);border-radius:16px;border:4px solid #fff;
  box-shadow:0 4px 0 rgba(0,0,0,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,5vw,34px);}
 .swatch.on{outline:5px solid #26221a;}
+#remote{position:absolute;right:10px;bottom:118px;background:#fff;border-radius:26px;
+ padding:14px 12px 12px;box-shadow:0 8px 0 rgba(0,0,0,.3);display:none;z-index:8;border:5px solid #26221a;}
+#remote.show{display:block;}
+#remote::before{content:"";position:absolute;top:-22px;left:50%;width:6px;height:20px;background:#26221a;border-radius:3px;}
+#remote::after{content:"";position:absolute;top:-30px;left:calc(50% - 3px);width:12px;height:12px;background:#ff5e5e;border-radius:50%;border:3px solid #26221a;}
+#remote .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#remote button{border:3px solid #26221a;border-radius:16px;font-size:clamp(24px,5vw,34px);
+ padding:10px 14px;cursor:pointer;background:#ffe98a;box-shadow:0 4px 0 #26221a;font-family:inherit;}
+#remote button:active{transform:translateY(3px);box-shadow:0 1px 0 #26221a;}
+.scenebtn{position:absolute;top:6px;width:clamp(46px,9vw,62px);height:clamp(46px,9vw,62px);
+ border-radius:50%;border:4px solid rgba(255,255,255,.9);background:rgba(255,255,255,.35);
+ font-size:clamp(22px,5vw,32px);cursor:pointer;z-index:9;box-shadow:0 4px 0 rgba(0,0,0,.2);}
+.scenebtn:active{transform:translateY(3px);}
+#nightToggle{left:8px;} #remoteToggle{right:8px;}
+#remoteToggle.on,#nightToggle.on,#talkToggle.on{background:#ffd93d;}
+#seasonToggle{left:8px;top:76px;} #stickerToggle{right:8px;top:76px;} #talkToggle{right:8px;top:146px;}
+#stickerPanel{position:absolute;inset:6% 6%;background:#fff;border:6px solid #26221a;border-radius:26px;
+ z-index:20;display:none;padding:14px;overflow:auto;}
+#stickerPanel.show{display:block;}
+#stickerPanel h2{text-align:center;font-size:clamp(20px,5vw,32px);margin:4px 0 10px;font-family:inherit;}
+#stickerGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;}
+.sticker{border:3px dashed #bbb;border-radius:18px;padding:8px 4px;text-align:center;background:#f6f3ea;}
+.sticker .em{font-size:clamp(30px,7vw,44px);filter:grayscale(1);opacity:.35;}
+.sticker .nm{font-size:11px;color:#888;}
+.sticker.got{border:3px solid #ffd93d;background:#fffbe8;transform:rotate(-2deg);}
+.sticker.got .em{filter:none;opacity:1;} .sticker.got .nm{color:#26221a;font-weight:bold;}
+#stickerClose{display:block;margin:12px auto 0;}
+#stickerPop{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(0);z-index:25;
+ background:#fffbe8;border:6px solid #ffd93d;border-radius:26px;padding:16px 26px;text-align:center;
+ pointer-events:none;transition:transform .3s cubic-bezier(.2,1.6,.4,1);}
+#stickerPop.show{transform:translate(-50%,-50%) scale(1) rotate(-3deg);}
+#stickerPop .em{font-size:64px;} #stickerPop .nm{font-size:18px;font-weight:bold;}
 @media (prefers-reduced-motion:reduce){.traypiece{animation:none}}
 </style>
 </head>
@@ -57,16 +89,34 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chal
     <button class="modebtn on" id="mBuild">🔨 BUILD</button>
     <button class="modebtn" id="mParty">🎉 FAN PARTY</button>
     <button class="modebtn" id="mCreate">🎨 MAKE MY FAN</button>
+    <button class="modebtn" id="mFixit">🔧 FIX-IT</button>
   </div>
   <div id="sky">
     <div id="title"></div>
     <svg id="fansvg" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
+      <defs><radialGradient id="glowg"><stop offset="0%" stop-color="#fff26e" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#fff26e" stop-opacity="0"/></radialGradient></defs>
       <g id="decor"></g>
       <rect x="0" y="0" width="1000" height="26" fill="rgba(255,255,255,.5)"/>
       <g id="fans"></g>
+      <g id="particles"></g>
+      <g id="cake"></g>
       <g id="bubbles"></g>
       <g id="windfx"></g>
     </svg>
+    <button class="scenebtn" id="nightToggle" title="night time">🌙</button>
+    <button class="scenebtn" id="remoteToggle" title="remote control">🕹️</button>
+    <button class="scenebtn" id="seasonToggle" title="weather">☀️</button>
+    <button class="scenebtn" id="stickerToggle" title="stickers">⭐</button>
+    <button class="scenebtn" id="talkToggle" title="talking" >🗣️</button>
+    <div id="stickerPanel"><h2>⭐ MY STICKERS ⭐</h2><div id="stickerGrid"></div>
+      <button id="stickerClose" class="bigbtn">OK!</button></div>
+    <div id="stickerPop"><div class="em"></div><div class="nm"></div></div>
+    <div id="remote"><div class="rgrid">
+      <button data-r="s0">✋</button><button data-r="s1">🐢</button>
+      <button data-r="s2">🐰</button><button data-r="s3">🚀</button>
+      <button data-r="light">💡</button><button data-r="rev">↔️</button>
+    </div></div>
     <div id="hint"></div>
     <div id="tray"></div>
   </div>
@@ -132,19 +182,47 @@ function partyTune(){ [523,659,784,1047,784,1047].forEach((f,i)=>setTimeout(()=>
 /* ============ FAN OBJECT ============ */
 const NS='http://www.w3.org/2000/svg';
 const $=id=>document.getElementById(id);
-let fans=[], mode='build', bubblesOn=false, bubbles=[];
+let fans=[], mode='build', bubblesOn=false, bubbles=[], night=false;
+let season=0, particles=[], cakeOn=false, candles=[], blowTimer=0, talkOn=true;
+const SEASONS=[{ic:'☀️'},{ic:'🍂'},{ic:'❄️'},{ic:'🌧️'}];
+/* ---------- speech ---------- */
+function say(t){ if(!talkOn)return; try{ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(t); u.rate=.95; u.pitch=1.25; speechSynthesis.speak(u);}catch(e){} }
+function announceSpeed(n){ say(['stop','one','two','threee!'][n]);
+ if(n>0)award('first-spin'); if(n===3)award('rocket'); }
+/* ---------- stickers ---------- */
+const STICKERS=[['first-spin','🌀','First Spin!'],['rocket','🚀','Rocket Speed!'],
+ ['backwards','🔄','Backwards!'],['night-light','💡','Night Light!'],['all-go','🎉','Party Master!'],
+ ['bubble-pop','🫧','Bubble Popper!'],['eight-blades','8️⃣','Eight Blades!'],['my-fan','🎨','Fan Maker!'],
+ ['fixed','🔧','Fan Doctor!'],['candles','🎂','Birthday Wind!']];
+let earned={};
+try{ earned=JSON.parse(localStorage.getItem('fanFriendsStickers')||'{}'); }catch(e){ earned={}; }
+function saveStickers(){ try{ localStorage.setItem('fanFriendsStickers',JSON.stringify(earned)); }catch(e){} }
+function award(id){ if(earned[id])return; earned[id]=1; saveStickers(); sparkle();
+ const st=STICKERS.find(x=>x[0]===id); if(!st)return;
+ const P=document.getElementById('stickerPop');
+ P.querySelector('.em').textContent=st[1]; P.querySelector('.nm').textContent=st[2];
+ P.classList.add('show'); say('You got a sticker! '+st[2]);
+ clearTimeout(award._t); award._t=setTimeout(()=>P.classList.remove('show'),2200); }
+function renderStickers(){ const G=document.getElementById('stickerGrid'); G.innerHTML='';
+ STICKERS.forEach(st=>{ const d=document.createElement('div');
+  d.className='sticker'+(earned[st[0]]?' got':'');
+  d.innerHTML=`<div class="em">${st[1]}</div><div class="nm">${earned[st[0]]?st[2]:'?'}</div>`;
+  G.appendChild(d); }); }
 const custom={shape:0,color:4,face:0,blades:5};
 
 function bladeArtFor(f,i){
  if(f.custom) return SHAPES[custom.shape].fn(COLORS[custom.color]);
  return THEMES[f.theme].blade(i);
 }
+const SADFACE='<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -8 13 Q 0 6 8 13" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="15" cy="-11" r="3.5" fill="#6ec6ff"/>';
 function faceArtFor(f){
+ if(f.fx && !f.fx.done) return SADFACE;
  if(f.custom) return FACES[custom.face].svg;
  return FACES[0].svg;
 }
 function makeFan(opts){
- const f=Object.assign({x:500,y:190,scale:1,theme:0,speed:0,angle:0,vel:0,light:false,
+ const f=Object.assign({x:500,y:190,scale:1,theme:0,speed:0,angle:0,vel:0,light:false,dir:1,
    custom:false,built:true,placed:0,globe:true},opts);
  const g=document.createElementNS(NS,'g');
  g.innerHTML=`
@@ -152,8 +230,19 @@ function makeFan(opts){
   <g class="rotor"></g>
   <g class="hub"></g>
   <g class="globeg" transform="translate(0,60)">
+    <circle class="glowc" r="0" fill="url(#glowg)"/>
     <circle class="bulb" r="30" fill="#fff8dd" stroke="#e0c86e" stroke-width="5"/>
     <g class="globeface"></g>
+  </g>
+  <g class="chainF" style="cursor:pointer">
+    <line x1="20" y1="86" x2="30" y2="128" stroke="#888" stroke-width="5" stroke-dasharray="2 6"/>
+    <circle cx="30" cy="140" r="16" fill="#ff6b6b" stroke="#c0392b" stroke-width="4"/>
+    <text x="30" y="147" text-anchor="middle" font-size="18">🌀</text>
+  </g>
+  <g class="chainL" style="cursor:pointer">
+    <line x1="-20" y1="86" x2="-30" y2="128" stroke="#888" stroke-width="5" stroke-dasharray="2 6"/>
+    <circle cx="-30" cy="140" r="16" fill="#ffd93d" stroke="#b8860b" stroke-width="4"/>
+    <text x="-30" y="147" text-anchor="middle" font-size="18">💡</text>
   </g>`;
  $('fans').appendChild(g);
  f.g=g; f.rotor=g.querySelector('.rotor'); f.hub=g.querySelector('.hub');
@@ -169,12 +258,30 @@ function makeFan(opts){
    if(moved>18) return; // it was a flick, not a tap
    ac();
    const inGlobe = e.target===f.bulb || e.target.parentNode===f.gface || e.target.closest('.globeg');
+   if(f.fx && !f.fx.done){
+     if(inGlobe && f.fx.flicker){ f.fx.flicker=false; popSnd(); floatEmoji(f,'💡');
+       f.bulb.setAttribute('opacity','1'); say('New bulb!'); checkFixed(f); return; }
+     if(e.target.closest('.hub') && f.fx.squeak){ f.fx.squeak=false; popSnd(); floatEmoji(f,'🛢️');
+       say('Squeak all gone!'); checkFixed(f); return; }
+     hintFlash('Fix me first! 🔧'); return; }
    if(inGlobe){ toggleLight(f); return; }
    if(!f.built){ hintFlash('Tap the blades below to build it! ⬇'); return; }
-   f.speed=(f.speed+1)%4; boop(f.speed);
+   f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
    if(f.speed===3) confettiBurst(f.x/10,'%');
    syncGlobalUI();
  });
+ // pull chains: fan chain cycles speed (incl. off), light chain toggles light
+ const cF=g.querySelector('.chainF'), cL=g.querySelector('.chainL');
+ function pullAnim(el){ el.setAttribute('transform','translate(0,14)'); tone(700,.05,'square',.09);
+   setTimeout(()=>{ el.setAttribute('transform',''); tone(500,.05,'square',.09); },140); }
+ cF.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac(); pullAnim(cF);
+   if(f.fx && !f.fx.done){ hintFlash('Fix me first! 🔧'); return; }
+   if(!f.built){ hintFlash('Build the fan first! ⬇'); return; }
+   f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
+   if(f.speed===3) confettiBurst(f.x/10); syncGlobalUI(); });
+ cF.addEventListener('pointerup',e=>e.stopPropagation());
+ cL.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac(); pullAnim(cL); toggleLight(f); });
+ cL.addEventListener('pointerup',e=>e.stopPropagation());
  fans.push(f);
  return f;
 }
@@ -182,24 +289,55 @@ function refreshFan(f){
  f.rotor.innerHTML='';
  const n=f.custom?custom.blades:THEMES[f.theme].blades;
  const count=f.built?n:f.placed;
+ f.bladeEls=[];
  for(let i=0;i<count;i++){
   const b=document.createElementNS(NS,'g');
   b.setAttribute('transform',`rotate(${i*(360/n)})`);
-  b.innerHTML=bladeArtFor(f,i);
+  const inner=document.createElementNS(NS,'g');
+  inner.innerHTML=bladeArtFor(f,i);
+  b.appendChild(inner);
+  if(f.fx && !f.fx.done){
+   b.style.cursor='pointer';
+   b.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac();
+    if(f.fx.wobble===i){ f.fx.wobble=null; popSnd(); floatEmoji(f,'🔧');
+      inner.setAttribute('transform',''); say('Blade fixed!'); checkFixed(f); }
+    else hintFlash('That blade is okay! Find the droopy one!'); });
+  }
+  f.bladeEls.push(inner);
   f.rotor.appendChild(b);
  }
  const hubBase=(!f.custom&&THEMES[f.theme].hubExtra)||'<circle r="24" fill="#fff" stroke="#c9c2b0" stroke-width="5"/>';
  f.hub.innerHTML=hubBase+`<g class="eyes">${faceArtFor(f)}</g>`;
+ const gl=f.g.querySelector('.glowc'); if(gl) gl.setAttribute('r', (night&&f.light)?85:(f.light?40:0));
  f.bulb.setAttribute('fill', f.light?'#fff26e':'#fff8dd');
  f.bulb.setAttribute('stroke', f.light?'#ffb340':'#e0c86e');
  f.gface.innerHTML=f.light?'<circle cx="-9" cy="-4" r="4" fill="#26221a"/><circle cx="9" cy="-4" r="4" fill="#26221a"/><path d="M -9 8 Q 0 16 9 8" stroke="#26221a" stroke-width="3" fill="none"/>':'';
 }
-function toggleLight(f){ f.light=!f.light; tone(f.light?880:440,.15,'sine',.12); refreshFan(f); setBG(); }
+function toggleLight(f){ if(f.fx&&!f.fx.done){ hintFlash('Fix me first! 🔧'); return; }
+ f.light=!f.light; tone(f.light?880:440,.15,'sine',.12); refreshFan(f); setBG();
+ if(night&&f.light)award('night-light'); }
+function floatEmoji(f,em){ const t=document.createElementNS(NS,'text');
+ t.setAttribute('x',f.x); t.setAttribute('y',f.y-40); t.setAttribute('font-size','44'); t.setAttribute('text-anchor','middle');
+ t.textContent=em; $('windfx').appendChild(t);
+ let y=f.y-40,o=1; const iv=setInterval(()=>{ y-=2; o-=.03; t.setAttribute('y',y); t.setAttribute('opacity',o);
+  if(o<=0){clearInterval(iv);t.remove();} },30); }
+function checkFixed(f){ if(f.fx.wobble===null && !f.fx.squeak && !f.fx.flicker){
+  f.fx.done=true; refreshFan(f); f.speed=2; confettiBurst(50); sparkle();
+  say('All better! Thank you, fan doctor!'); award('fixed');
+  hintFlash('All better! 🎉',4000);
+  const nb=$('nextPatient'); if(nb)nb.style.display='inline-block'; } }
 function clearFans(){ fans=[]; $('fans').innerHTML=''; }
 
 /* ============ SCENE ============ */
 function setBG(){
  const anyLight=fans.some(f=>f.light);
+ if(!night && season>0){
+  const c=[null,['#ffd9a0','#e8933f'],['#dceefc','#9fc4e8'],['#a9b8c9','#6b7b8f']][season];
+  $('room').style.background=`linear-gradient(${c[0]},${c[1]})`; return; }
+ if(!night && mode==='fixit'){ $('room').style.background='linear-gradient(#bfe8e2,#7fc8bd)'; return; }
+ if(night){ $('room').style.background = anyLight
+   ? 'linear-gradient(#2a2f4a,#141626)' : 'linear-gradient(#171a2e,#0b0c18)';
+   return; }
  const t=THEMES[mode==='party'? (fans[0]?fans[0].theme:0) : (fans[0]?fans[0].theme:0)]||THEMES[0];
  const src=(mode==='create')?{bg:['#ffe9b0','#ffb85c'],bgLit:['#fff3cf','#ffcf8a']}:t;
  const c=anyLight?src.bgLit:src.bg;
@@ -252,6 +390,7 @@ function controlsBuild(f){
  const n=document.createElement('button'); n.className='bigbtn purple'; n.textContent='🔁';
  n.onclick=()=>{ ac(); modeBuild.theme=((modeBuild.theme||0)+1)%THEMES.length; sparkle(); modeBuild(); };
  C.appendChild(n);
+ C.appendChild(cakeButton());
  syncGlobalUI();
 }
 
@@ -267,6 +406,7 @@ function modeParty(){
  const all=document.createElement('button'); all.className='bigbtn party'; all.textContent='🎉 ALL GO!';
  all.style.fontSize='clamp(20px,5vw,32px)';
  all.onclick=()=>{ ac(); fans.forEach(f=>{f.speed=3;f.light=true;refreshFan(f);}); partyTune();
+   award('all-go'); say('everybody go!');
    confettiBurst(25,'%'); confettiBurst(75,'%'); setBG(); syncGlobalUI(); };
  C.appendChild(all);
  const stop=document.createElement('button'); stop.className='bigbtn'; stop.textContent='✋';
@@ -280,6 +420,7 @@ function modeParty(){
  shuf.onclick=()=>{ ac(); fans.forEach(f=>{f.theme=Math.floor(Math.random()*THEMES.length);refreshFan(f);});
    sparkle(); };
  C.appendChild(shuf);
+ C.appendChild(cakeButton());
 }
 
 /* ============ MODE: CREATE ============ */
@@ -312,12 +453,14 @@ function modeCreate(){
  // row 3: blade count, speed, spin
  const r3=document.createElement('div'); r3.className='swatchrow';
  const minus=document.createElement('button'); minus.className='bigbtn'; minus.textContent='➖';
- minus.onclick=()=>{ ac(); if(custom.blades>3){custom.blades--; boop(1); refreshFan(f);} };
+ minus.onclick=()=>{ ac(); if(custom.blades>3){custom.blades--; boop(1); refreshFan(f); say(custom.blades+' blades');} };
  const plus=document.createElement('button'); plus.className='bigbtn'; plus.textContent='➕';
- plus.onclick=()=>{ ac(); if(custom.blades<8){custom.blades++; boop(2); refreshFan(f);} };
+ plus.onclick=()=>{ ac(); if(custom.blades<8){custom.blades++; boop(2); refreshFan(f);
+   say(custom.blades===8?'eight blades! wow!':custom.blades+' blades'); if(custom.blades===8)award('eight-blades');} };
  const go=document.createElement('button'); go.className='bigbtn party'; go.textContent='🌀 SPIN IT!';
  go.style.fontSize='clamp(20px,5vw,30px)';
- go.onclick=()=>{ ac(); f.speed=(f.speed+1)%4; boop(f.speed); if(f.speed===3)confettiBurst(50,'%'); };
+ go.onclick=()=>{ ac(); f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
+   if(f.speed>0)award('my-fan'); if(f.speed===3)confettiBurst(50); };
  r3.appendChild(minus); r3.appendChild(plus); r3.appendChild(go);
  C.appendChild(r1); C.appendChild(r2); C.appendChild(r3);
 }
@@ -343,7 +486,7 @@ function spawnBubble(){
  e.setAttribute('r',b.r); e.setAttribute('fill','rgba(255,255,255,.35)');
  e.setAttribute('stroke','rgba(255,255,255,.9)'); e.setAttribute('stroke-width','3');
  e.style.cursor='pointer';
- e.addEventListener('pointerdown',()=>{ bubblePop();
+ e.addEventListener('pointerdown',()=>{ bubblePop(); award('bubble-pop');
   e.setAttribute('fill','rgba(255,255,255,.9)');
   setTimeout(()=>{e.remove(); const k=bubbles.indexOf(b); if(k>-1)bubbles.splice(k,1);},60); });
  $('bubbles').appendChild(e); b.e=e; bubbles.push(b);
@@ -370,10 +513,11 @@ function syncGlobalUI(){
 }
 
 /* ============ MODE BAR ============ */
-function setModeBtn(id){ ['mBuild','mParty','mCreate'].forEach(m=>$(m).classList.toggle('on',m===id)); }
+function setModeBtn(id){ ['mBuild','mParty','mCreate','mFixit'].forEach(m=>$(m).classList.toggle('on',m===id)); }
 $('mBuild').onclick=()=>{ ac(); setModeBtn('mBuild'); sparkle(); modeBuild(); };
 $('mParty').onclick=()=>{ ac(); setModeBtn('mParty'); sparkle(); modeParty(); };
 $('mCreate').onclick=()=>{ ac(); setModeBtn('mCreate'); sparkle(); modeCreate(); };
+$('mFixit').onclick=()=>{ ac(); setModeBtn('mFixit'); sparkle(); modeFixit(); };
 
 /* ============ MAIN LOOP ============ */
 const faceWobble=f=>{
@@ -384,8 +528,16 @@ const faceWobble=f=>{
 function loop(){
  fans.forEach(f=>{
   f.vel*=.965;
-  f.angle += f.speed*f.speed*2.2 + f.speed*1.5 + f.vel;
-  const wob = (f.speed===3||Math.abs(f.vel)>8) ? Math.sin(f.angle/6)*3 : 0;
+  f.angle += f.dir*(f.speed*f.speed*2.2 + f.speed*1.5) + f.vel;
+  let wob = (f.speed===3||Math.abs(f.vel)>8) ? Math.sin(f.angle/6)*3 : 0;
+  if(f.fx && !f.fx.done){
+   if(f.fx.squeak){ wob += Math.sin(Date.now()/40)*1.5;
+     if(Math.random()<.008){ tone(1500,.12,'sawtooth',.05); tone(1200,.1,'sawtooth',.04); } }
+   if(f.fx.wobble!==null && f.bladeEls && f.bladeEls[f.fx.wobble])
+     f.bladeEls[f.fx.wobble].setAttribute('transform',`rotate(${16+Math.sin(Date.now()/120)*7})`);
+   if(f.fx.flicker && Math.random()<.12)
+     f.bulb.setAttribute('opacity', Math.random()<.5?'0.25':'1');
+  }
   f.g.setAttribute('transform',`translate(${f.x+wob},${f.y+wob*.4}) scale(${f.scale})`);
   f.rotor.setAttribute('transform',`rotate(${f.angle})`);
   faceWobble(f);
@@ -398,12 +550,148 @@ function loop(){
   }
  });
  stepBubbles();
+ stepParticles();
+ stepCake();
  requestAnimationFrame(loop);
 }
+/* ============ MODE: FIX-IT ============ */
+function modeFixit(){
+ mode='fixit'; clearFans(); $('tray').innerHTML=''; showCake(false);
+ $('title').textContent='FAN HOSPITAL!'; makeDecor('sparkles'); 
+ const f=makeFan({x:500,y:210,scale:1.3,theme:Math.floor(Math.random()*THEMES.length)});
+ const nb=THEMES[f.theme].blades;
+ f.fx={ wobble: Math.random()<.8? Math.floor(Math.random()*nb) : null,
+        squeak: Math.random()<.6, flicker: Math.random()<.6, done:false };
+ if(f.fx.wobble===null && !f.fx.squeak && !f.fx.flicker) f.fx.wobble=0;
+ f.light=true; refreshFan(f); setBG();
+ say('Oh no! This fan feels sick!');
+ const probs=[]; if(f.fx.wobble!==null)probs.push('a droopy blade');
+ if(f.fx.squeak)probs.push('a squeak'); if(f.fx.flicker)probs.push('a blinky light');
+ hintFlash('This fan has '+probs.join(' and ')+'! Tap the sick parts! 🔧',0);
+ const C=$('controls'); C.innerHTML='';
+ const nx=document.createElement('button'); nx.className='bigbtn party'; nx.id='nextPatient';
+ nx.textContent='🚑 NEXT PATIENT!'; nx.style.display='none'; nx.style.fontSize='clamp(20px,5vw,30px)';
+ nx.onclick=()=>{ ac(); sparkle(); modeFixit(); };
+ C.appendChild(nx);
+ const bye=document.createElement('button'); bye.className='bigbtn'; bye.textContent='💡';
+ bye.onclick=()=>{ac();toggleLight(f);}; C.appendChild(bye);
+}
+/* ============ BIRTHDAY CAKE ============ */
+function cakeButton(){
+ const b=document.createElement('button'); b.className='bigbtn'; b.textContent='🎂'; b.style.background='#ffc7da';
+ b.onclick=()=>{ ac(); showCake(!cakeOn); b.classList.toggle('on',cakeOn);
+  if(cakeOn){ hintFlash('Rocket speed blows out the candles! 🚀',4000); say('Blow out the candles!'); } };
+ return b;
+}
+function showCake(on){
+ cakeOn=on; blowTimer=0; const C=$('cake'); C.innerHTML='';
+ if(!on)return;
+ candles=[1,1,1,1];
+ let h='<g transform="translate(500,585)">';
+ h+='<rect x="-90" y="-34" width="180" height="34" rx="10" fill="#ff8fb1" stroke="#c2557f" stroke-width="4"/>';
+ h+='<rect x="-70" y="-58" width="140" height="26" rx="9" fill="#ffe14d" stroke="#d9a520" stroke-width="4"/>';
+ h+='<path d="M -90 -34 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0" stroke="#fff" stroke-width="5" fill="none"/>';
+ for(let i=0;i<4;i++){ const x=-48+i*32;
+  h+=`<rect x="${x-4}" y="-84" width="8" height="26" fill="${['#6ec6ff','#b28dff','#5ad46e','#ff6b6b'][i]}" stroke="#26221a" stroke-width="2"/>`;
+  h+=`<g class="flame" data-i="${i}" transform="translate(${x},-88)"><ellipse cx="0" cy="-6" rx="6" ry="11" fill="#ffb340"/><ellipse cx="0" cy="-4" rx="3" ry="6" fill="#ffe98a"/></g>`;
+ }
+ h+='</g>';
+ C.innerHTML=h;
+ C.style.cursor='pointer';
+ C.onclick=null;
+ C.addEventListener('pointerdown',()=>{ if(candles.some(c=>!c)){ showCake(true); tone(600,.1,'sine',.1); say('Candles lit!'); } });
+}
+function stepCake(){
+ if(!cakeOn)return;
+ const wind=Math.max(0,...fans.map(f=>f.speed*(f.built?1:0)),0);
+ $('cake').querySelectorAll('.flame').forEach(fl=>{
+  const i=+fl.dataset.i; if(!candles[i]){ fl.setAttribute('opacity','0'); return; }
+  fl.setAttribute('opacity','1');
+  const flick=Math.sin(Date.now()/60+i)*3;
+  fl.setAttribute('transform',`translate(${-48+i*32},-88) skewX(${-wind*7+flick})`);
+ });
+ if(wind===3 && candles.some(c=>c)){
+  blowTimer++;
+  if(blowTimer>40){ blowTimer=0;
+   const i=candles.findIndex(c=>c); candles[i]=0;
+   tone(200,.25,'sine',.14);
+   if(!candles.some(c=>c)){ confettiBurst(50); partyTune(); say('Happy birthday!'); award('candles');
+    hintFlash('You blew them all out! Tap the cake to light them again! 🎂',4500); }
+  }
+ } else if(wind<3) blowTimer=0;
+}
+/* ============ WEATHER PARTICLES ============ */
+function spawnP(){
+ const t=season; // 1 leaf 2 snow 3 rain
+ const p={t, x:20+Math.random()*960, y:-20, vx:(Math.random()-.5)*.6,
+   vy: t===3? 7+Math.random()*3 : .5+Math.random()*.6, rot:Math.random()*360, sw:Math.random()*100};
+ if(t===3){ const e=document.createElementNS(NS,'line');
+   e.setAttribute('stroke','rgba(190,220,255,.8)'); e.setAttribute('stroke-width','3'); e.setAttribute('stroke-linecap','round');
+   p.e=e; }
+ else { const e=document.createElementNS(NS,'text');
+   e.setAttribute('font-size', t===1? 26 : 20); e.textContent = t===1?'🍂':'❄️'; p.e=e; }
+ $('particles').appendChild(p.e); particles.push(p);
+}
+function stepParticles(){
+ const caps={1:14,2:26,3:42};
+ if(season>0 && particles.length<caps[season] && Math.random()<(season===3?.6:.14)) spawnP();
+ for(let i=particles.length-1;i>=0;i--){
+  const p=particles[i];
+  if(p.t!==season){ p.e.remove(); particles.splice(i,1); continue; }
+  if(p.t!==3){
+   fans.forEach(f=>{ if(!f.speed)return; const dx=p.x-f.x, dy=p.y-f.y;
+    if(Math.abs(dx)<220*f.scale && dy>-20 && dy<280){ p.vx+=Math.sign(dx||1)*.05*f.speed; p.vy+=.01*f.speed; } });
+   p.vx*=.985; p.x+=p.vx+Math.sin((p.y+p.sw)/40)*.6; p.y+=p.vy; p.rot+=p.vx*4+1;
+   p.e.setAttribute('x',p.x); p.e.setAttribute('y',p.y);
+   p.e.setAttribute('transform',`rotate(${p.rot} ${p.x} ${p.y})`);
+  } else {
+   p.x+=p.vx; p.y+=p.vy;
+   p.e.setAttribute('x1',p.x); p.e.setAttribute('y1',p.y);
+   p.e.setAttribute('x2',p.x-1.5); p.e.setAttribute('y2',p.y-14);
+  }
+  if(p.y>660||p.x<-40||p.x>1040){ p.e.remove(); particles.splice(i,1); }
+ }
+}
+/* ============ REMOTE & NIGHT ============ */
+$('remoteToggle').onclick=()=>{ ac(); const r=$('remote');
+ r.classList.toggle('show'); $('remoteToggle').classList.toggle('on');
+ tone(r.classList.contains('show')?900:500,.12,'sine',.12);
+ if(r.classList.contains('show')) hintFlash('The remote controls EVERY fan! 📺',3200); };
+$('remote').querySelectorAll('button').forEach(b=>{
+ b.onclick=()=>{ ac(); const r=b.dataset.r;
+  const targets=fans.filter(f=>f.built);
+  if(!targets.length){ hintFlash('Build the fan first! ⬇'); return; }
+  if(r[0]==='s'){ const n=+r[1];
+    if(targets.some(f=>f.fx&&!f.fx.done)){ hintFlash('Fix me first! 🔧'); return; }
+    targets.forEach(f=>f.speed=n); boop(n); announceSpeed(n);
+    if(n===3){ confettiBurst(50); if(mode==='party')partyTune(); } }
+  if(r==='light'){ const on=!targets[0].light;
+    targets.forEach(f=>{f.light=on; refreshFan(f);}); tone(on?880:440,.15,'sine',.12); setBG();
+    if(night&&on)award('night-light'); }
+  if(r==='rev'){ targets.forEach(f=>f.dir*=-1); tone(260,.2,'triangle',.12);
+    award('backwards'); say('backwards!'); hintFlash('Backwards! 🔄',2000); }
+  syncGlobalUI(); };
+});
+$('nightToggle').onclick=()=>{ ac(); night=!night;
+ $('nightToggle').classList.toggle('on',night);
+ $('nightToggle').textContent=night?'☀️':'🌙';
+ tone(night?330:660,.2,'sine',.12);
+ fans.forEach(refreshFan); setBG();
+ hintFlash(night?'Night time! Pull the light chains! 💡':'Good morning! ☀️',3000); };
+$('seasonToggle').onclick=()=>{ ac(); season=(season+1)%4;
+ $('seasonToggle').textContent=SEASONS[season].ic; tone(500+season*120,.14,'sine',.12);
+ setBG();
+ const m=['Sunny day! ☀️','Falling leaves! The fans blow them! 🍂','Snow day! Real fans go backwards in winter — try ↔️!','Rainy day! 🌧️'][season];
+ hintFlash(m,3600); say(['sunny','autumn','winter','rainy'][season]); };
+$('stickerToggle').onclick=()=>{ ac(); renderStickers();
+ $('stickerPanel').classList.add('show'); sparkle(); };
+$('stickerClose').onclick=()=>{ ac(); $('stickerPanel').classList.remove('show'); popSnd(); };
+$('talkToggle').classList.add('on');
+$('talkToggle').onclick=()=>{ ac(); talkOn=!talkOn; $('talkToggle').classList.toggle('on',talkOn);
+ if(talkOn)say('I can talk!'); else try{speechSynthesis.cancel();}catch(e){} tone(talkOn?800:400,.12,'sine',.1); };
 modeBuild(); loop();
 
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
-// keep iPad from rubber-band scrolling / pinch zooming the game
 document.addEventListener('gesturestart', e=>e.preventDefault());
 document.addEventListener('touchmove', e=>{ if(e.scale && e.scale!==1) e.preventDefault(); }, {passive:false});
 
