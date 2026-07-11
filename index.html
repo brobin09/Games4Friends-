@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fan Friends! 🌀</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fan Friends">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#6ec6ff">
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:manipulation;}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chalkboard SE','Marker Felt',sans-serif;}
+#room{position:fixed;inset:0;transition:background 1s;display:flex;flex-direction:column;}
+#modebar{display:flex;justify-content:center;gap:8px;padding:8px;z-index:10;}
+.modebtn{border:none;border-radius:18px;font-size:clamp(16px,3.4vw,24px);padding:8px 16px;cursor:pointer;
+ font-family:inherit;background:rgba(255,255,255,.75);box-shadow:0 4px 0 rgba(0,0,0,.2);}
+.modebtn.on{background:#fff;outline:5px solid #ffd93d;}
+.modebtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.2);}
+#sky{flex:1;position:relative;overflow:hidden;}
+#title{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:clamp(18px,4.4vw,34px);
+ color:#fff;text-shadow:3px 3px 0 rgba(0,0,0,.25);pointer-events:none;z-index:5;}
+#fansvg{position:absolute;inset:0;width:100%;height:100%;}
+#tray{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:6;}
+.traypiece{width:clamp(58px,13vw,100px);height:clamp(58px,13vw,100px);cursor:pointer;
+ filter:drop-shadow(0 4px 0 rgba(0,0,0,.2));animation:bob 1.4s ease-in-out infinite;}
+.traypiece:nth-child(2){animation-delay:.2s}.traypiece:nth-child(3){animation-delay:.4s}
+.traypiece:nth-child(4){animation-delay:.6s}.traypiece:nth-child(5){animation-delay:.8s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#controls{background:rgba(255,255,255,.92);border-top:6px solid rgba(0,0,0,.12);
+ display:flex;justify-content:center;align-items:center;gap:8px;padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex-wrap:wrap;min-height:76px;}
+.bigbtn{border:none;border-radius:22px;font-size:clamp(26px,7vw,42px);line-height:1;
+ padding:12px 16px;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.25);background:#ffd93d;
+ transition:transform .08s;font-family:inherit;}
+.bigbtn:active{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.25);}
+.bigbtn.on{outline:6px solid #fff;background:#7ae582;}
+.bigbtn.party{background:#ff8fb1;} .bigbtn.purple{background:#b28dff;} .bigbtn.blue{background:#6ec6ff;}
+#hint{position:absolute;bottom:110px;left:0;right:0;text-align:center;font-size:clamp(16px,3.6vw,26px);
+ color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);pointer-events:none;z-index:5;}
+.pop{animation:pop .35s ease-out;}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.confetti{position:absolute;width:13px;height:13px;border-radius:3px;pointer-events:none;z-index:4;}
+.swatchrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:100%;}
+.swatch{width:clamp(44px,10vw,64px);height:clamp(44px,10vw,64px);border-radius:16px;border:4px solid #fff;
+ box-shadow:0 4px 0 rgba(0,0,0,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,5vw,34px);}
+.swatch.on{outline:5px solid #26221a;}
+@media (prefers-reduced-motion:reduce){.traypiece{animation:none}}
+</style>
+</head>
+<body>
+<div id="room">
+  <div id="modebar">
+    <button class="modebtn on" id="mBuild">🔨 BUILD</button>
+    <button class="modebtn" id="mParty">🎉 FAN PARTY</button>
+    <button class="modebtn" id="mCreate">🎨 MAKE MY FAN</button>
+  </div>
+  <div id="sky">
+    <div id="title"></div>
+    <svg id="fansvg" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
+      <g id="decor"></g>
+      <rect x="0" y="0" width="1000" height="26" fill="rgba(255,255,255,.5)"/>
+      <g id="fans"></g>
+      <g id="bubbles"></g>
+      <g id="windfx"></g>
+    </svg>
+    <div id="hint"></div>
+    <div id="tray"></div>
+  </div>
+  <div id="controls"></div>
+</div>
+
+<script>
+/* ============ THEMES (blade art) ============ */
+const THEMES=[
+ {name:'RAINBOW FAN', bg:['#6ec6ff','#3f8fd2'], bgLit:['#9be1ff','#5eb2ef'], blades:4, decor:'clouds',
+  blade:(i)=>{const cols=['#ff5e5e','#ffb340','#ffe14d','#5ad46e'];
+   return `<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${cols[i%4]}" stroke="#ffffff" stroke-width="6"/><circle cx="120" cy="0" r="10" fill="#fff" opacity=".7"/>`;}},
+ {name:'FLOWER FAN', bg:['#a8e063','#56ab2f'], bgLit:['#d4f7a1','#7cc650'], blades:5, decor:'bees',
+  blade:()=>`<ellipse cx="95" cy="0" rx="85" ry="34" fill="#ff8fb1" stroke="#fff" stroke-width="6"/><ellipse cx="95" cy="0" rx="45" ry="16" fill="#ffc7da"/>`,
+  hubExtra:'<circle r="26" fill="#ffd93d" stroke="#e8a91d" stroke-width="5"/>'},
+ {name:'PIZZA FAN', bg:['#ffb75e','#ed8f03'], bgLit:['#ffd394','#f5a623'], blades:6, decor:'sparkles',
+  blade:()=>`<path d="M0 0 L160 -30 Q 176 0 160 30 Z" fill="#ffcf6e" stroke="#d97b29" stroke-width="6"/><path d="M148 -26 Q 168 0 148 26 L160 30 Q 176 0 160 -30 Z" fill="#e8593a"/><circle cx="70" cy="-6" r="9" fill="#e8593a"/><circle cx="110" cy="8" r="9" fill="#e8593a"/><circle cx="95" cy="-14" r="7" fill="#3f9d5a"/>`},
+ {name:'SPACE FAN', bg:['#2b2d5e','#0f1030'], bgLit:['#4a4d9e','#232463'], blades:4, decor:'stars',
+  blade:(i)=>`<path d="M0 -12 L150 -34 L172 0 L150 34 L0 12 Z" fill="${i%2?'#b28dff':'#6ec6ff'}" stroke="#fff" stroke-width="6"/><text x="120" y="10" font-size="30" text-anchor="middle">⭐</text>`,
+  hubExtra:'<circle r="26" fill="#ffe98a" stroke="#fff" stroke-width="4"/>'},
+ {name:'WATERMELON FAN', bg:['#7ae582','#25a244'], bgLit:['#aef4b4','#4cc26a'], blades:5, decor:'sparkles',
+  blade:()=>`<path d="M0 0 L158 -32 Q 178 0 158 32 Z" fill="#ff6b81" stroke="#2e8b57" stroke-width="8"/><circle cx="80" cy="-4" r="5" fill="#26221a"/><circle cx="112" cy="8" r="5" fill="#26221a"/><circle cx="120" cy="-12" r="5" fill="#26221a"/>`},
+ {name:'BUTTERFLY FAN', bg:['#ffd1ff','#fab2ff'], bgLit:['#ffe6ff','#ffd1ff'], blades:4, decor:'clouds',
+  blade:(i)=>`<path d="M0 0 Q 70 -70 150 -40 Q 185 -10 150 8 Q 80 30 0 0 Z" fill="${i%2?'#b28dff':'#ff8fb1'}" stroke="#fff" stroke-width="6"/><circle cx="105" cy="-22" r="12" fill="#fff" opacity=".8"/><circle cx="135" cy="-14" r="8" fill="#fff" opacity=".8"/>`},
+];
+/* ============ CREATE-MODE PARTS ============ */
+const SHAPES=[
+ {icon:'🏓', fn:c=>`<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
+ {icon:'🌸', fn:c=>`<ellipse cx="95" cy="0" rx="85" ry="34" fill="${c}" stroke="#fff" stroke-width="6"/><ellipse cx="95" cy="0" rx="42" ry="15" fill="#ffffff" opacity=".5"/>`},
+ {icon:'🍕', fn:c=>`<path d="M0 0 L160 -30 Q 176 0 160 30 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
+ {icon:'⭐', fn:c=>`<path d="M0 -12 L150 -34 L172 0 L150 34 L0 12 Z" fill="${c}" stroke="#fff" stroke-width="6"/><circle cx="130" cy="0" r="9" fill="#fff" opacity=".8"/>`},
+ {icon:'🦋', fn:c=>`<path d="M0 0 Q 70 -70 150 -40 Q 185 -10 150 8 Q 80 30 0 0 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
+ {icon:'🍃', fn:c=>`<path d="M0 0 Q 80 -50 165 0 Q 80 50 0 0 Z" fill="${c}" stroke="#fff" stroke-width="6"/><path d="M10 0 Q 85 0 158 0" stroke="#fff" stroke-width="4" fill="none" opacity=".7"/>`},
+];
+const COLORS=['#ff5e5e','#ffb340','#ffe14d','#5ad46e','#6ec6ff','#b28dff','#ff8fb1','#26d7c4'];
+const FACES=[
+ {icon:'😊', svg:'<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -8 8 Q 0 15 8 8" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/>'},
+ {icon:'😛', svg:'<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -7 7 Q 0 13 7 7" stroke="#26221a" stroke-width="3" fill="none"/><ellipse cx="2" cy="12" rx="4" ry="6" fill="#ff6b81"/>'},
+ {icon:'😎', svg:'<rect x="-14" y="-8" width="12" height="9" rx="3" fill="#26221a"/><rect x="2" y="-8" width="12" height="9" rx="3" fill="#26221a"/><line x1="-2" y1="-5" x2="2" y2="-5" stroke="#26221a" stroke-width="2.5"/><path d="M -7 9 Q 0 14 7 9" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/>'},
+ {icon:'🐱', svg:'<path d="M -16 -12 L -10 -2 L -20 -4 Z" fill="#26221a"/><path d="M 16 -12 L 10 -2 L 20 -4 Z" fill="#26221a"/><circle cx="-7" cy="-2" r="4" fill="#26221a"/><circle cx="7" cy="-2" r="4" fill="#26221a"/><path d="M -6 8 Q -3 11 0 8 Q 3 11 6 8" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/>'},
+];
+
+/* ============ AUDIO ============ */
+let AC=null, windGain=null;
+function ac(){ if(!AC){ try{
+  AC=new (window.AudioContext||window.webkitAudioContext)();
+  const len=AC.sampleRate*2, buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  const s=AC.createBufferSource(); s.buffer=buf; s.loop=true;
+  const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=300;
+  windGain=AC.createGain(); windGain.gain.value=0;
+  s.connect(f); f.connect(windGain); windGain.connect(AC.destination); s.start();
+ }catch(e){} } return AC; }
+function tone(f,d,type,v){ const a=ac(); if(!a)return; const o=a.createOscillator(),g=a.createGain();
+ o.type=type||'sine'; o.frequency.value=f; g.gain.value=v||.12; o.connect(g); g.connect(a.destination);
+ o.start(); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d); o.stop(a.currentTime+d); }
+function popSnd(){ tone(500,.1,'sine',.15); setTimeout(()=>tone(900,.12,'sine',.15),60); }
+function sparkle(){ [660,880,1100,1320].forEach((f,i)=>setTimeout(()=>tone(f,.18,'triangle',.1),i*90)); }
+function boop(n){ tone(300+n*160,.12,'square',.08); }
+function bubblePop(){ tone(900+Math.random()*500,.07,'sine',.14); }
+function partyTune(){ [523,659,784,1047,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.16,'triangle',.11),i*110)); }
+
+/* ============ FAN OBJECT ============ */
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+let fans=[], mode='build', bubblesOn=false, bubbles=[];
+const custom={shape:0,color:4,face:0,blades:5};
+
+function bladeArtFor(f,i){
+ if(f.custom) return SHAPES[custom.shape].fn(COLORS[custom.color]);
+ return THEMES[f.theme].blade(i);
+}
+function faceArtFor(f){
+ if(f.custom) return FACES[custom.face].svg;
+ return FACES[0].svg;
+}
+function makeFan(opts){
+ const f=Object.assign({x:500,y:190,scale:1,theme:0,speed:0,angle:0,vel:0,light:false,
+   custom:false,built:true,placed:0,globe:true},opts);
+ const g=document.createElementNS(NS,'g');
+ g.innerHTML=`
+  <line x1="0" y1="-160" x2="0" y2="-70" stroke="#7a5c3e" stroke-width="12" stroke-linecap="round"/>
+  <g class="rotor"></g>
+  <g class="hub"></g>
+  <g class="globeg" transform="translate(0,60)">
+    <circle class="bulb" r="30" fill="#fff8dd" stroke="#e0c86e" stroke-width="5"/>
+    <g class="globeface"></g>
+  </g>`;
+ $('fans').appendChild(g);
+ f.g=g; f.rotor=g.querySelector('.rotor'); f.hub=g.querySelector('.hub');
+ f.bulb=g.querySelector('.bulb'); f.gface=g.querySelector('.globeface');
+ refreshFan(f);
+ // interactions: tap = speed cycle, tap globe = light, drag = flick spin
+ let px=null, moved=0;
+ function pt(e){ const t=e.touches?e.touches[0]:e; return t.clientX; }
+ g.addEventListener('pointerdown',e=>{ px=pt(e); moved=0; });
+ g.addEventListener('pointermove',e=>{ if(px===null)return; const x=pt(e);
+   f.vel += (x-px)*0.15; moved+=Math.abs(x-px); px=x; });
+ g.addEventListener('pointerup',e=>{ px=null;
+   if(moved>18) return; // it was a flick, not a tap
+   ac();
+   const inGlobe = e.target===f.bulb || e.target.parentNode===f.gface || e.target.closest('.globeg');
+   if(inGlobe){ toggleLight(f); return; }
+   if(!f.built){ hintFlash('Tap the blades below to build it! ⬇'); return; }
+   f.speed=(f.speed+1)%4; boop(f.speed);
+   if(f.speed===3) confettiBurst(f.x/10,'%');
+   syncGlobalUI();
+ });
+ fans.push(f);
+ return f;
+}
+function refreshFan(f){
+ f.rotor.innerHTML='';
+ const n=f.custom?custom.blades:THEMES[f.theme].blades;
+ const count=f.built?n:f.placed;
+ for(let i=0;i<count;i++){
+  const b=document.createElementNS(NS,'g');
+  b.setAttribute('transform',`rotate(${i*(360/n)})`);
+  b.innerHTML=bladeArtFor(f,i);
+  f.rotor.appendChild(b);
+ }
+ const hubBase=(!f.custom&&THEMES[f.theme].hubExtra)||'<circle r="24" fill="#fff" stroke="#c9c2b0" stroke-width="5"/>';
+ f.hub.innerHTML=hubBase+`<g class="eyes">${faceArtFor(f)}</g>`;
+ f.bulb.setAttribute('fill', f.light?'#fff26e':'#fff8dd');
+ f.bulb.setAttribute('stroke', f.light?'#ffb340':'#e0c86e');
+ f.gface.innerHTML=f.light?'<circle cx="-9" cy="-4" r="4" fill="#26221a"/><circle cx="9" cy="-4" r="4" fill="#26221a"/><path d="M -9 8 Q 0 16 9 8" stroke="#26221a" stroke-width="3" fill="none"/>':'';
+}
+function toggleLight(f){ f.light=!f.light; tone(f.light?880:440,.15,'sine',.12); refreshFan(f); setBG(); }
+function clearFans(){ fans=[]; $('fans').innerHTML=''; }
+
+/* ============ SCENE ============ */
+function setBG(){
+ const anyLight=fans.some(f=>f.light);
+ const t=THEMES[mode==='party'? (fans[0]?fans[0].theme:0) : (fans[0]?fans[0].theme:0)]||THEMES[0];
+ const src=(mode==='create')?{bg:['#ffe9b0','#ffb85c'],bgLit:['#fff3cf','#ffcf8a']}:t;
+ const c=anyLight?src.bgLit:src.bg;
+ $('room').style.background=`linear-gradient(${c[0]},${c[1]})`;
+}
+function makeDecor(kind){
+ const D=$('decor'); D.innerHTML='';
+ const put=(x,y,s,txt)=>{const e=document.createElementNS(NS,'text');
+   e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('font-size',s);e.textContent=txt;
+   e.setAttribute('opacity','.85');D.appendChild(e);};
+ if(kind==='clouds'){put(70,110,44,'☁️');put(840,150,38,'☁️');put(150,520,34,'☁️');put(860,540,40,'☁️');}
+ if(kind==='stars'){for(let i=0;i<14;i++)put(30+Math.random()*940,60+Math.random()*540,14+Math.random()*22,'✦');put(110,140,40,'🌙');}
+ if(kind==='bees'){put(110,140,36,'🐝');put(860,120,32,'🐝');put(110,560,38,'🌷');put(860,560,38,'🌻');}
+ if(kind==='sparkles'){put(110,130,34,'✨');put(860,150,34,'✨');put(130,560,34,'✨');put(860,560,34,'✨');}
+ if(kind==='party'){put(60,120,40,'🎈');put(920,130,40,'🎈');put(80,560,36,'🎁');put(900,560,36,'🧁');}
+}
+function hintFlash(t,ms){ $('hint').textContent=t; clearTimeout(hintFlash._t);
+ if(ms!==0) hintFlash._t=setTimeout(()=>{ if($('hint').textContent===t)$('hint').textContent=''; },ms||2600); }
+
+/* ============ MODE: BUILD ============ */
+function modeBuild(){
+ mode='build'; clearFans(); bubblesOn=false; bubbles=[]; $('bubbles').innerHTML='';
+ const f=makeFan({x:500,y:210,scale:1.35,theme:modeBuild.theme||0,built:false,placed:0});
+ const t=THEMES[f.theme];
+ $('title').textContent=t.name; makeDecor(t.decor); setBG();
+ const tray=$('tray'); tray.innerHTML='';
+ for(let i=0;i<t.blades;i++){
+  const w=document.createElement('div'); w.className='traypiece';
+  w.innerHTML=`<svg viewBox="-10 -60 200 120" width="100%" height="100%"><g>${t.blade(i)}</g></svg>`;
+  w.onclick=()=>{ if(w.dataset.used)return; w.dataset.used=1; w.style.visibility='hidden'; ac();
+    f.placed++; refreshFan(f); popSnd();
+    if(f.placed>=t.blades){ f.built=true; tray.innerHTML=''; sparkle();
+      hintFlash('Tap the fan to make it spin! 🌀',5000); }
+  };
+  tray.appendChild(w);
+ }
+ hintFlash('Tap the blades to build your fan!',0);
+ controlsBuild(f);
+}
+function controlsBuild(f){
+ const C=$('controls'); C.innerHTML='';
+ ['✋','🐢','🐰','🚀'].forEach((ic,i)=>{
+  const b=document.createElement('button'); b.className='bigbtn'; b.id='spd'+i; b.textContent=ic;
+  b.onclick=()=>{ ac(); if(!f.built){hintFlash('Build the fan first! ⬇');return;}
+    f.speed=i; boop(i); if(i===3)confettiBurst(50,'%'); syncGlobalUI(); };
+  C.appendChild(b);
+ });
+ const l=document.createElement('button'); l.className='bigbtn'; l.textContent='💡'; l.style.background='#ffe98a';
+ l.onclick=()=>{ac();toggleLight(f);}; C.appendChild(l);
+ const n=document.createElement('button'); n.className='bigbtn purple'; n.textContent='🔁';
+ n.onclick=()=>{ ac(); modeBuild.theme=((modeBuild.theme||0)+1)%THEMES.length; sparkle(); modeBuild(); };
+ C.appendChild(n);
+ syncGlobalUI();
+}
+
+/* ============ MODE: PARTY ============ */
+function modeParty(){
+ mode='party'; clearFans(); $('tray').innerHTML='';
+ $('title').textContent='FAN PARTY!'; makeDecor('party');
+ const spots=[[250,190],[750,190],[250,450],[750,450]];
+ spots.forEach((s,i)=>makeFan({x:s[0],y:s[1],scale:.78,theme:i%THEMES.length}));
+ setBG();
+ hintFlash('Tap a fan to change its speed! Slide it to spin it yourself!',5200);
+ const C=$('controls'); C.innerHTML='';
+ const all=document.createElement('button'); all.className='bigbtn party'; all.textContent='🎉 ALL GO!';
+ all.style.fontSize='clamp(20px,5vw,32px)';
+ all.onclick=()=>{ ac(); fans.forEach(f=>{f.speed=3;f.light=true;refreshFan(f);}); partyTune();
+   confettiBurst(25,'%'); confettiBurst(75,'%'); setBG(); syncGlobalUI(); };
+ C.appendChild(all);
+ const stop=document.createElement('button'); stop.className='bigbtn'; stop.textContent='✋';
+ stop.onclick=()=>{ ac(); fans.forEach(f=>f.speed=0); boop(0); syncGlobalUI(); };
+ C.appendChild(stop);
+ const bub=document.createElement('button'); bub.className='bigbtn blue'; bub.textContent='🫧';
+ bub.onclick=()=>{ ac(); bubblesOn=!bubblesOn; bub.classList.toggle('on',bubblesOn);
+   hintFlash(bubblesOn?'Pop the bubbles! The fans blow them around!':'',3200); };
+ C.appendChild(bub);
+ const shuf=document.createElement('button'); shuf.className='bigbtn purple'; shuf.textContent='🎲';
+ shuf.onclick=()=>{ ac(); fans.forEach(f=>{f.theme=Math.floor(Math.random()*THEMES.length);refreshFan(f);});
+   sparkle(); };
+ C.appendChild(shuf);
+}
+
+/* ============ MODE: CREATE ============ */
+function modeCreate(){
+ mode='create'; clearFans(); $('tray').innerHTML='';
+ $('title').textContent='MAKE MY FAN!'; makeDecor('sparkles');
+ const f=makeFan({x:500,y:200,scale:1.2,custom:true});
+ setBG();
+ hintFlash('Pick blades, a color, and a face!',4000);
+ const C=$('controls'); C.innerHTML='';
+ // row 1: shapes
+ const r1=document.createElement('div'); r1.className='swatchrow';
+ SHAPES.forEach((s,i)=>{ const w=document.createElement('div');
+  w.className='swatch'+(i===custom.shape?' on':''); w.style.background='#fff'; w.textContent=s.icon;
+  w.onclick=()=>{ ac(); custom.shape=i; popSnd(); refreshFan(f);
+    r1.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on')); w.classList.add('on'); };
+  r1.appendChild(w); });
+ // row 2: colors + faces
+ const r2=document.createElement('div'); r2.className='swatchrow';
+ COLORS.forEach((c,i)=>{ const w=document.createElement('div');
+  w.className='swatch'+(i===custom.color?' on':''); w.style.background=c; w.dataset.kind='c';
+  w.onclick=()=>{ ac(); custom.color=i; popSnd(); refreshFan(f);
+    r2.querySelectorAll('.swatch[data-kind=c]').forEach(x=>x.classList.remove('on')); w.classList.add('on'); };
+  r2.appendChild(w); });
+ FACES.forEach((fc,i)=>{ const w=document.createElement('div');
+  w.className='swatch'+(i===custom.face?' on':''); w.style.background='#fff'; w.textContent=fc.icon; w.dataset.kind='f';
+  w.onclick=()=>{ ac(); custom.face=i; popSnd(); refreshFan(f);
+    r2.querySelectorAll('.swatch[data-kind=f]').forEach(x=>x.classList.remove('on')); w.classList.add('on'); };
+  r2.appendChild(w); });
+ // row 3: blade count, speed, spin
+ const r3=document.createElement('div'); r3.className='swatchrow';
+ const minus=document.createElement('button'); minus.className='bigbtn'; minus.textContent='➖';
+ minus.onclick=()=>{ ac(); if(custom.blades>3){custom.blades--; boop(1); refreshFan(f);} };
+ const plus=document.createElement('button'); plus.className='bigbtn'; plus.textContent='➕';
+ plus.onclick=()=>{ ac(); if(custom.blades<8){custom.blades++; boop(2); refreshFan(f);} };
+ const go=document.createElement('button'); go.className='bigbtn party'; go.textContent='🌀 SPIN IT!';
+ go.style.fontSize='clamp(20px,5vw,30px)';
+ go.onclick=()=>{ ac(); f.speed=(f.speed+1)%4; boop(f.speed); if(f.speed===3)confettiBurst(50,'%'); };
+ r3.appendChild(minus); r3.appendChild(plus); r3.appendChild(go);
+ C.appendChild(r1); C.appendChild(r2); C.appendChild(r3);
+}
+
+/* ============ CONFETTI & BUBBLES ============ */
+function confettiBurst(leftPct){
+ const cols=COLORS;
+ for(let i=0;i<30;i++){
+  const c=document.createElement('div'); c.className='confetti';
+  c.style.background=cols[i%cols.length];
+  c.style.left=(leftPct-5+Math.random()*10)+'%'; c.style.top='28%';
+  $('sky').appendChild(c);
+  const dx=(Math.random()-.5)*500, dy=180+Math.random()*380, rot=Math.random()*720;
+  c.animate([{transform:'translate(0,0) rotate(0)',opacity:1},
+    {transform:`translate(${dx}px,${dy}px) rotate(${rot}deg)`,opacity:0}],
+    {duration:1300+Math.random()*800,easing:'ease-out'}).onfinish=()=>c.remove();
+ }
+}
+function spawnBubble(){
+ if(bubbles.length>=12)return;
+ const b={x:60+Math.random()*880, y:660, r:16+Math.random()*18, vx:(Math.random()-.5)*.6, vy:-(0.7+Math.random()*.8)};
+ const e=document.createElementNS(NS,'circle');
+ e.setAttribute('r',b.r); e.setAttribute('fill','rgba(255,255,255,.35)');
+ e.setAttribute('stroke','rgba(255,255,255,.9)'); e.setAttribute('stroke-width','3');
+ e.style.cursor='pointer';
+ e.addEventListener('pointerdown',()=>{ bubblePop();
+  e.setAttribute('fill','rgba(255,255,255,.9)');
+  setTimeout(()=>{e.remove(); const k=bubbles.indexOf(b); if(k>-1)bubbles.splice(k,1);},60); });
+ $('bubbles').appendChild(e); b.e=e; bubbles.push(b);
+}
+function stepBubbles(){
+ if(bubblesOn && Math.random()<.05) spawnBubble();
+ for(let i=bubbles.length-1;i>=0;i--){
+  const b=bubbles[i];
+  // fans blow bubbles
+  fans.forEach(f=>{ if(!f.speed)return;
+   const dx=b.x-f.x, dy=b.y-f.y;
+   if(Math.abs(dx)<200*f.scale && dy>0 && dy<260){ b.vx += Math.sign(dx||1)*0.03*f.speed; b.vy += 0.02*f.speed; } });
+  b.vx*=.99; b.x+=b.vx; b.y+=b.vy; b.vy=Math.min(b.vy, -(0.4));
+  b.e.setAttribute('cx',b.x); b.e.setAttribute('cy',b.y);
+  if(b.y<-30||b.x<-40||b.x>1040){ b.e.remove(); bubbles.splice(i,1); }
+ }
+}
+
+/* ============ GLOBAL UI SYNC ============ */
+function syncGlobalUI(){
+ if(mode==='build'&&fans[0]){ for(let i=0;i<4;i++){ const b=$('spd'+i); if(b)b.classList.toggle('on',fans[0].speed===i); } }
+ if(windGain&&AC){ const top=Math.max(0,...fans.map(f=>f.speed));
+  windGain.gain.linearRampToValueAtTime(top*.05,AC.currentTime+.3); }
+}
+
+/* ============ MODE BAR ============ */
+function setModeBtn(id){ ['mBuild','mParty','mCreate'].forEach(m=>$(m).classList.toggle('on',m===id)); }
+$('mBuild').onclick=()=>{ ac(); setModeBtn('mBuild'); sparkle(); modeBuild(); };
+$('mParty').onclick=()=>{ ac(); setModeBtn('mParty'); sparkle(); modeParty(); };
+$('mCreate').onclick=()=>{ ac(); setModeBtn('mCreate'); sparkle(); modeCreate(); };
+
+/* ============ MAIN LOOP ============ */
+const faceWobble=f=>{
+ const eyes=f.hub.querySelector('.eyes'); if(!eyes)return;
+ if(f.speed===3||Math.abs(f.vel)>6){ eyes.setAttribute('transform',`translate(${Math.sin(f.angle/8)*3},0)`); }
+ else eyes.setAttribute('transform','');
+};
+function loop(){
+ fans.forEach(f=>{
+  f.vel*=.965;
+  f.angle += f.speed*f.speed*2.2 + f.speed*1.5 + f.vel;
+  const wob = (f.speed===3||Math.abs(f.vel)>8) ? Math.sin(f.angle/6)*3 : 0;
+  f.g.setAttribute('transform',`translate(${f.x+wob},${f.y+wob*.4}) scale(${f.scale})`);
+  f.rotor.setAttribute('transform',`rotate(${f.angle})`);
+  faceWobble(f);
+  if((f.speed>=2)&&Math.random()<.06){
+   const l=document.createElementNS(NS,'path');
+   const y=f.y-40+Math.random()*120, x=f.x-140+Math.random()*280;
+   l.setAttribute('d',`M ${x} ${y} q 20 8 40 0`); l.setAttribute('stroke','rgba(255,255,255,.7)');
+   l.setAttribute('stroke-width','4'); l.setAttribute('fill','none'); l.setAttribute('stroke-linecap','round');
+   $('windfx').appendChild(l); setTimeout(()=>l.remove(),380);
+  }
+ });
+ stepBubbles();
+ requestAnimationFrame(loop);
+}
+modeBuild(); loop();
+
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+// keep iPad from rubber-band scrolling / pinch zooming the game
+document.addEventListener('gesturestart', e=>e.preventDefault());
+document.addEventListener('touchmove', e=>{ if(e.scale && e.scale!==1) e.preventDefault(); }, {passive:false});
+
+</script>
+</body>
+</html>
