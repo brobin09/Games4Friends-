@@ -64,6 +64,13 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chal
 #nightToggle{left:8px;} #remoteToggle{right:8px;}
 #remoteToggle.on,#nightToggle.on,#talkToggle.on{background:#ffd93d;}
 #seasonToggle{left:8px;top:76px;} #stickerToggle{right:8px;top:76px;} #talkToggle{right:8px;top:146px;}
+#bedToggle{left:8px;top:146px;} #photoToggle{left:8px;top:216px;}
+#bedToggle.on,#photoToggle.on{background:#ffd93d;}
+#modebar{flex-wrap:wrap;}
+.gamecard{border:none;border-radius:26px;font-family:inherit;cursor:pointer;background:#fff;
+ box-shadow:0 6px 0 rgba(0,0,0,.25);padding:14px 18px;font-size:clamp(18px,4.4vw,28px);}
+.gamecard:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.25);}
+.gamecard .big{display:block;font-size:clamp(34px,9vw,54px);}
 #stickerPanel{position:absolute;inset:6% 6%;background:#fff;border:6px solid #26221a;border-radius:26px;
  z-index:20;display:none;padding:14px;overflow:auto;}
 #stickerPanel.show{display:block;}
@@ -90,6 +97,8 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chal
     <button class="modebtn" id="mParty">🎉 FAN PARTY</button>
     <button class="modebtn" id="mCreate">🎨 MAKE MY FAN</button>
     <button class="modebtn" id="mFixit">🔧 FIX-IT</button>
+    <button class="modebtn" id="mPlay">🎮 PLAY</button>
+    <button class="modebtn" id="mPet">💜 PET</button>
   </div>
   <div id="sky">
     <div id="title"></div>
@@ -101,6 +110,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chal
       <g id="fans"></g>
       <g id="particles"></g>
       <g id="cake"></g>
+      <g id="game"></g>
       <g id="bubbles"></g>
       <g id="windfx"></g>
     </svg>
@@ -109,6 +119,9 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chal
     <button class="scenebtn" id="seasonToggle" title="weather">☀️</button>
     <button class="scenebtn" id="stickerToggle" title="stickers">⭐</button>
     <button class="scenebtn" id="talkToggle" title="talking" >🗣️</button>
+    <button class="scenebtn" id="bedToggle" title="bedtime">😴</button>
+    <button class="scenebtn" id="photoToggle" title="my room photo">📷</button>
+    <input type="file" id="photoIn" accept="image/*" style="display:none">
     <div id="stickerPanel"><h2>⭐ MY STICKERS ⭐</h2><div id="stickerGrid"></div>
       <button id="stickerClose" class="bigbtn">OK!</button></div>
     <div id="stickerPop"><div class="em"></div><div class="nm"></div></div>
@@ -141,7 +154,21 @@ const THEMES=[
   blade:()=>`<path d="M0 0 L158 -32 Q 178 0 158 32 Z" fill="#ff6b81" stroke="#2e8b57" stroke-width="8"/><circle cx="80" cy="-4" r="5" fill="#26221a"/><circle cx="112" cy="8" r="5" fill="#26221a"/><circle cx="120" cy="-12" r="5" fill="#26221a"/>`},
  {name:'BUTTERFLY FAN', bg:['#ffd1ff','#fab2ff'], bgLit:['#ffe6ff','#ffd1ff'], blades:4, decor:'clouds',
   blade:(i)=>`<path d="M0 0 Q 70 -70 150 -40 Q 185 -10 150 8 Q 80 30 0 0 Z" fill="${i%2?'#b28dff':'#ff8fb1'}" stroke="#fff" stroke-width="6"/><circle cx="105" cy="-22" r="12" fill="#fff" opacity=".8"/><circle cx="135" cy="-14" r="8" fill="#fff" opacity=".8"/>`},
+ {name:'DINO FAN', bg:['#7cc650','#3e7d32'], bgLit:['#a5e07c','#5a9e4a'], blades:4, decor:'dino',
+  blade:()=>`<path d="M0 -12 L150 -30 Q176 0 150 30 L0 12 Z" fill="#5ad46e" stroke="#2e8b57" stroke-width="6"/><path d="M40 -20 l10 -14 10 14 Z M75 -25 l10 -14 10 14 Z M110 -27 l10 -14 10 14 Z" fill="#7ae582" stroke="#2e8b57" stroke-width="4"/>`,
+  hubExtra:'<circle r="26" fill="#5ad46e" stroke="#2e8b57" stroke-width="5"/>'},
+ {name:'UNICORN FAN', bg:['#ffd1ff','#c3a6ff'], bgLit:['#ffe6ff','#dcc8ff'], blades:5, decor:'sparkles',
+  blade:(i)=>`<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${i%2?'#ff8fb1':'#c3a6ff'}" stroke="#fff" stroke-width="6"/><text x="118" y="10" font-size="26" text-anchor="middle">⭐</text>`,
+  hubExtra:'<path d="M0 -46 L9 -20 L-9 -20 Z" fill="#ffd93d" stroke="#e8a91d" stroke-width="3"/><circle r="26" fill="#fff" stroke="#ffb6d9" stroke-width="5"/>'},
+ {name:'FIRE TRUCK FAN', bg:['#9fb8c8','#5d7488'], bgLit:['#c4d6e2','#7e94a8'], blades:4, decor:'city',
+  blade:()=>`<path d="M0 -13 L160 -26 Q 174 0 160 26 L0 13 Z" fill="#e8433a" stroke="#fff" stroke-width="6"/><line x1="30" y1="0" x2="150" y2="0" stroke="#fff" stroke-width="5"/><line x1="50" y1="-9" x2="50" y2="9" stroke="#fff" stroke-width="4"/><line x1="85" y1="-10" x2="85" y2="10" stroke="#fff" stroke-width="4"/><line x1="120" y1="-9" x2="120" y2="9" stroke="#fff" stroke-width="4"/>`,
+  hubExtra:'<circle r="26" fill="#e8433a" stroke="#8f1f18" stroke-width="5"/><circle cy="-14" r="7" fill="#ffe14d" stroke="#e8a91d" stroke-width="2"/>'},
+ {name:'OCEAN FAN', bg:['#37c3d8','#0a6e8a'], bgLit:['#6fdbe8','#1e94ae'], blades:5, decor:'ocean',
+  blade:()=>`<path d="M0 -10 Q 60 -40 120 -22 Q 170 -8 172 0 Q 170 8 120 22 Q 60 40 0 10 Z" fill="#2f9fd8" stroke="#fff" stroke-width="6"/><text x="105" y="10" font-size="26" text-anchor="middle">🐟</text>`,
+  hubExtra:'<circle r="26" fill="#6fdbe8" stroke="#1e94ae" stroke-width="5"/>'},
 ];
+/* blended "Newton disc" color per theme index (rainbow…ocean) */
+const MIX=['#d6b156','#ff9fbe','#f0a95a','#96aaf0','#e07a76','#d99ed8','#5ad46e','#e1bce8','#e8433a','#37a8c8'];
 /* ============ CREATE-MODE PARTS ============ */
 const SHAPES=[
  {icon:'🏓', fn:c=>`<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
@@ -194,7 +221,9 @@ function announceSpeed(n){ say(['stop','one','two','threee!'][n]);
 const STICKERS=[['first-spin','🌀','First Spin!'],['rocket','🚀','Rocket Speed!'],
  ['backwards','🔄','Backwards!'],['night-light','💡','Night Light!'],['all-go','🎉','Party Master!'],
  ['bubble-pop','🫧','Bubble Popper!'],['eight-blades','8️⃣','Eight Blades!'],['my-fan','🎨','Fan Maker!'],
- ['fixed','🔧','Fan Doctor!'],['candles','🎂','Birthday Wind!']];
+ ['fixed','🔧','Fan Doctor!'],['candles','🎂','Birthday Wind!'],
+ ['color-mix','🌈','Color Mixer!'],['simon','👂','Good Listener!'],
+ ['freeze','🧊','Freeze Dancer!'],['plane','✈️','Pilot!'],['pet-love','❤️','Best Friend!']];
 let earned={};
 try{ earned=JSON.parse(localStorage.getItem('fanFriendsStickers')||'{}'); }catch(e){ earned={}; }
 function saveStickers(){ try{ localStorage.setItem('fanFriendsStickers',JSON.stringify(earned)); }catch(e){} }
@@ -212,11 +241,14 @@ function renderStickers(){ const G=document.getElementById('stickerGrid'); G.inn
 const custom={shape:0,color:4,face:0,blades:5};
 
 function bladeArtFor(f,i){
+ if(f.pet) return SHAPES[1].fn(i%2?'#ff8fb1':'#ffc7da');
  if(f.custom) return SHAPES[custom.shape].fn(COLORS[custom.color]);
  return THEMES[f.theme].blade(i);
 }
+const SLEEPFACE='<path d="M -12 -3 Q -8 1 -4 -3" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 4 -3 Q 8 1 12 -3" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M -6 9 Q 0 12 6 9" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/>';
 const SADFACE='<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -8 13 Q 0 6 8 13" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="15" cy="-11" r="3.5" fill="#6ec6ff"/>';
 function faceArtFor(f){
+ if(f.pet && petState.sleepy) return SLEEPFACE;
  if(f.fx && !f.fx.done) return SADFACE;
  if(f.custom) return FACES[custom.face].svg;
  return FACES[0].svg;
@@ -228,6 +260,8 @@ function makeFan(opts){
  g.innerHTML=`
   <line x1="0" y1="-160" x2="0" y2="-70" stroke="#7a5c3e" stroke-width="12" stroke-linecap="round"/>
   <g class="rotor"></g>
+  <circle class="mixc" r="0" opacity="0"/>
+  <circle class="mixc2" r="0" opacity="0"/>
   <g class="hub"></g>
   <g class="globeg" transform="translate(0,60)">
     <circle class="glowc" r="0" fill="url(#glowg)"/>
@@ -277,6 +311,7 @@ function makeFan(opts){
  cF.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac(); pullAnim(cF);
    if(f.fx && !f.fx.done){ hintFlash('Fix me first! 🔧'); return; }
    if(!f.built){ hintFlash('Build the fan first! ⬇'); return; }
+   if(f.pet&&petState.sleepy){ petWake(f); }
    f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
    if(f.speed===3) confettiBurst(f.x/10); syncGlobalUI(); });
  cF.addEventListener('pointerup',e=>e.stopPropagation());
@@ -306,7 +341,11 @@ function refreshFan(f){
   f.bladeEls.push(inner);
   f.rotor.appendChild(b);
  }
- const hubBase=(!f.custom&&THEMES[f.theme].hubExtra)||'<circle r="24" fill="#fff" stroke="#c9c2b0" stroke-width="5"/>';
+ let hubBase=(!f.custom&&!f.pet&&THEMES[f.theme].hubExtra)||'<circle r="24" fill="#fff" stroke="#c9c2b0" stroke-width="5"/>';
+ if(f.pet){ hubBase='<circle r="26" fill="#fff" stroke="#ffb6d9" stroke-width="5"/>';
+  if(petState.visits>=7) hubBase+='<path d="M -16 -24 L -16 -38 L -8 -30 L 0 -42 L 8 -30 L 16 -38 L 16 -24 Z" fill="#ffd93d" stroke="#e8a91d" stroke-width="3"/>';
+  else if(petState.visits>=3) hubBase+='<path d="M -14 -22 L 0 -48 L 14 -22 Z" fill="#b28dff" stroke="#7c5fc4" stroke-width="3"/><circle cy="-48" r="5" fill="#ffd93d"/>';
+ }
  f.hub.innerHTML=hubBase+`<g class="eyes">${faceArtFor(f)}</g>`;
  const gl=f.g.querySelector('.glowc'); if(gl) gl.setAttribute('r', (night&&f.light)?85:(f.light?40:0));
  f.bulb.setAttribute('fill', f.light?'#fff26e':'#fff8dd');
@@ -330,6 +369,7 @@ function clearFans(){ fans=[]; $('fans').innerHTML=''; }
 
 /* ============ SCENE ============ */
 function setBG(){
+ if(typeof roomPhoto!=='undefined'&&roomPhoto)return;
  const anyLight=fans.some(f=>f.light);
  if(!night && season>0){
   const c=[null,['#ffd9a0','#e8933f'],['#dceefc','#9fc4e8'],['#a9b8c9','#6b7b8f']][season];
@@ -352,6 +392,9 @@ function makeDecor(kind){
  if(kind==='stars'){for(let i=0;i<14;i++)put(30+Math.random()*940,60+Math.random()*540,14+Math.random()*22,'✦');put(110,140,40,'🌙');}
  if(kind==='bees'){put(110,140,36,'🐝');put(860,120,32,'🐝');put(110,560,38,'🌷');put(860,560,38,'🌻');}
  if(kind==='sparkles'){put(110,130,34,'✨');put(860,150,34,'✨');put(130,560,34,'✨');put(860,560,34,'✨');}
+ if(kind==='dino'){put(80,560,44,'🦖');put(880,550,40,'🌴');put(120,140,34,'🌋');put(860,130,32,'🦕');}
+ if(kind==='ocean'){put(90,560,40,'🐙');put(880,540,38,'🐠');put(110,140,32,'🫧');put(860,150,34,'⛵');}
+ if(kind==='city'){put(80,560,40,'🚒');put(880,550,36,'🏢');put(120,140,32,'🚨');put(860,130,32,'🏠');}
  if(kind==='party'){put(60,120,40,'🎈');put(920,130,40,'🎈');put(80,560,36,'🎁');put(900,560,36,'🧁');}
 }
 function hintFlash(t,ms){ $('hint').textContent=t; clearTimeout(hintFlash._t);
@@ -513,11 +556,13 @@ function syncGlobalUI(){
 }
 
 /* ============ MODE BAR ============ */
-function setModeBtn(id){ ['mBuild','mParty','mCreate','mFixit'].forEach(m=>$(m).classList.toggle('on',m===id)); }
+function setModeBtn(id){ ['mBuild','mParty','mCreate','mFixit','mPlay','mPet'].forEach(m=>$(m).classList.toggle('on',m===id)); }
 $('mBuild').onclick=()=>{ ac(); setModeBtn('mBuild'); sparkle(); modeBuild(); };
 $('mParty').onclick=()=>{ ac(); setModeBtn('mParty'); sparkle(); modeParty(); };
 $('mCreate').onclick=()=>{ ac(); setModeBtn('mCreate'); sparkle(); modeCreate(); };
 $('mFixit').onclick=()=>{ ac(); setModeBtn('mFixit'); sparkle(); modeFixit(); };
+$('mPlay').onclick=()=>{ ac(); setModeBtn('mPlay'); sparkle(); modePlay(); };
+$('mPet').onclick=()=>{ ac(); setModeBtn('mPet'); sparkle(); modePet(); };
 
 /* ============ MAIN LOOP ============ */
 const faceWobble=f=>{
@@ -541,6 +586,21 @@ function loop(){
   f.g.setAttribute('transform',`translate(${f.x+wob},${f.y+wob*.4}) scale(${f.scale})`);
   f.rotor.setAttribute('transform',`rotate(${f.angle})`);
   faceWobble(f);
+  /* Newton color-mix at rocket speed */
+  const m1=f.g.querySelector('.mixc'), m2=f.g.querySelector('.mixc2');
+  if(m1){
+   if(f.speed===3){
+    const mixCol = f.pet?'#ffb0c8' : f.custom?COLORS[custom.color] : (MIX[f.theme]||'#ccc');
+    m1.setAttribute('r',176); m1.setAttribute('fill',mixCol); m1.setAttribute('opacity','.5');
+    m2.setAttribute('r',110); m2.setAttribute('fill','#ffffff'); m2.setAttribute('opacity','.15');
+    f.rotor.setAttribute('opacity','.35');
+    if(!loop._mixed){ loop._mixed=true; award('color-mix'); say('Look! The colors all mixed together!'); }
+   } else { m1.setAttribute('opacity','0'); m1.setAttribute('r',0);
+    m2.setAttribute('opacity','0'); m2.setAttribute('r',0); f.rotor.setAttribute('opacity','1'); }
+  }
+  /* bedtime droopy eyes */
+  const ey=f.hub.querySelector('.eyes');
+  if(ey&&bedtime) ey.setAttribute('transform','scale(1,0.35) translate(0,-4)');
   if((f.speed>=2)&&Math.random()<.06){
    const l=document.createElementNS(NS,'path');
    const y=f.y-40+Math.random()*120, x=f.x-140+Math.random()*280;
@@ -552,7 +612,208 @@ function loop(){
  stepBubbles();
  stepParticles();
  stepCake();
+ stepGame();
+ stepBedtime();
+ stepStorm();
  requestAnimationFrame(loop);
+}
+/* ============ PET STATE ============ */
+let petState={visits:1,last:'',pets:0,sleepy:false};
+try{ const st=JSON.parse(localStorage.getItem('fanFriendsPet')||'null'); if(st)petState=st; }catch(e){}
+function savePet(){ try{ localStorage.setItem('fanFriendsPet',JSON.stringify(petState)); }catch(e){} }
+/* ============ MODE: PET ============ */
+function modePet(){
+ mode='pet'; clearFans(); $('tray').innerHTML=''; showCake(false); gameKind=null;
+ const today=new Date().toDateString();
+ if(petState.last!==today){ petState.visits=(petState.visits||0)+1; petState.last=today;
+   petState.sleepy=true; savePet(); }
+ $('title').textContent='BREEZY · DAY '+petState.visits;
+ makeDecor('sparkles');
+ const f=makeFan({x:500,y:210,scale:1.3}); f.pet=true;
+ if(petState.sleepy){ f.speed=0; }
+ else { f.speed=1; f.light=true; }
+ refreshFan(f); setBG();
+ if(petState.sleepy){ say('shhh... Breezy is sleeping. Spin me to wake me up!');
+   hintFlash('Breezy is asleep! Pull the chain to wake her! 😴',0); }
+ else { say('Hi! I missed you!'); hintFlash('Pat Breezy on her nose! 💜',4000); }
+ const C=$('controls'); C.innerHTML='';
+ const pat=document.createElement('button'); pat.className='bigbtn party'; pat.textContent='💜 PAT';
+ pat.onclick=()=>{ ac(); petPat(f); };
+ C.appendChild(pat);
+ const l=document.createElement('button'); l.className='bigbtn'; l.textContent='💡'; l.style.background='#ffe98a';
+ l.onclick=()=>{ac();toggleLight(f);}; C.appendChild(l);
+}
+function petWake(f){ if(!petState.sleepy)return; petState.sleepy=false; savePet();
+ refreshFan(f); sparkle(); say('Good morning! I missed you so much!');
+ hintFlash('Breezy woke up! 🌞',3000); }
+function petPat(f){
+ if(petState.sleepy){ petWake(f); f.speed=1; return; }
+ petState.pets=(petState.pets||0)+1; savePet();
+ floatEmoji(f,'❤️'); popSnd();
+ say(['hee hee!','I love you!','that tickles!','more please!'][Math.floor(Math.random()*4)]);
+ if(petState.pets>=5)award('pet-love');
+}
+/* ============ MODE: PLAY (mini-games) ============ */
+let gameKind=null, game={};
+function modePlay(){
+ mode='play'; clearFans(); $('tray').innerHTML=''; showCake(false); gameKind=null; $('game').innerHTML='';
+ $('title').textContent='PICK A GAME!'; makeDecor('party'); setBG();
+ hintFlash('',1);
+ const C=$('controls'); C.innerHTML='';
+ [['👂','SIMON SAYS',gameSimon],['🧊','FREEZE DANCE',gameFreeze],['✈️','AIRPLANE',gamePlane]].forEach(([ic,nm,fn])=>{
+  const b=document.createElement('button'); b.className='gamecard';
+  b.innerHTML=`<span class="big">${ic}</span>${nm}`;
+  b.onclick=()=>{ ac(); sparkle(); fn(); };
+  C.appendChild(b);
+ });
+}
+/* ---- SIMON SAYS ---- */
+function gameSimon(){
+ gameKind='simon'; clearFans(); $('game').innerHTML='';
+ $('title').textContent='SIMON SAYS · ⭐0';
+ const f=makeFan({x:500,y:210,scale:1.3,theme:Math.floor(Math.random()*THEMES.length)});
+ game={f,score:0,cool:0,target:null};
+ const C=$('controls'); C.innerHTML='';
+ const back=document.createElement('button'); back.className='bigbtn purple'; back.textContent='◀ GAMES';
+ back.onclick=()=>{ac();modePlay();}; C.appendChild(back);
+ setBG(); simonNext();
+}
+function simonNext(){
+ const f=game.f;
+ const opts=[];
+ [1,2,3].forEach(n=>{ if(f.speed!==n)opts.push({t:'speed',n,txt:'Make me spin '+['','ONE','TWO','THREE'][n]+'! '+['','🐢','🐰','🚀'][n]}); });
+ if(f.speed!==0)opts.push({t:'speed',n:0,txt:'Make me STOP! ✋'});
+ opts.push({t:'light',on:!f.light,txt:f.light?'Turn my light OFF! 💡':'Turn my light ON! 💡'});
+ opts.push({t:'rev',base:f.dir,txt:'Make me go BACKWARDS! 🔄'});
+ game.target=opts[Math.floor(Math.random()*opts.length)];
+ game.cool=0;
+ hintFlash('Simon says: '+game.target.txt,0);
+ say('Simon says. '+game.target.txt.replace(/[🐢🐰🚀✋💡🔄!]/g,''));
+}
+function stepSimon(){
+ const t=game.target, f=game.f; if(!t)return;
+ if(game.cool>0){ game.cool--; if(game.cool===0)simonNext(); return; }
+ let hit=false;
+ if(t.t==='speed'&&f.speed===t.n)hit=true;
+ if(t.t==='light'&&f.light===t.on)hit=true;
+ if(t.t==='rev'&&f.dir!==t.base)hit=true;
+ if(hit){ game.score++; $('title').textContent='SIMON SAYS · ⭐'+game.score;
+  sparkle(); say('Yes! Great job!'); hintFlash('🎉 YES! 🎉',1500);
+  if(game.score===5){ award('simon'); confettiBurst(50); }
+  game.target=null; game.cool=80; game.target={t:'wait'};
+ }
+}
+/* ---- FREEZE DANCE ---- */
+const MELODY=[523,587,659,523,659,784,659,587,523,587,494,523];
+function gameFreeze(){
+ gameKind='freeze'; clearFans(); $('game').innerHTML='';
+ $('title').textContent='FREEZE DANCE · ⭐0';
+ makeFan({x:320,y:190,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ makeFan({x:680,y:190,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ game={score:0,music:true,mi:0,mt:0,stopAt:150+Math.random()*200,frozenAt:-1,window:0};
+ const C=$('controls'); C.innerHTML='';
+ const fz=document.createElement('button'); fz.className='bigbtn'; fz.textContent='✋ FREEZE!';
+ fz.style.fontSize='clamp(26px,7vw,40px)'; fz.style.background='#6ec6ff';
+ fz.onclick=()=>{ ac();
+  if(game.music){ tone(160,.2,'square',.1); hintFlash('Not yet! Wait for the music to stop!',1800); return; }
+  if(game.window>0){ game.window=0; game.score++;
+   $('title').textContent='FREEZE DANCE · ⭐'+game.score;
+   fans.forEach(f=>f.speed=0); sparkle(); say('You froze! Amazing!');
+   if(game.score===5){ award('freeze'); confettiBurst(50); }
+   game.resume=60; }
+ };
+ C.appendChild(fz);
+ const back=document.createElement('button'); back.className='bigbtn purple'; back.textContent='◀ GAMES';
+ back.onclick=()=>{ac();modePlay();}; C.appendChild(back);
+ setBG(); hintFlash('Dance while the music plays... FREEZE when it stops! 🧊',4000);
+}
+function stepFreeze(){
+ if(game.resume>0){ game.resume--; if(game.resume===0){ game.music=true; game.stopAt=150+Math.random()*220; game.mt=0; } return; }
+ if(game.music){
+  fans.forEach(f=>f.speed=2);
+  game.mt++;
+  if(game.mt%16===0){ tone(MELODY[game.mi%MELODY.length],.18,'triangle',.1); game.mi++; }
+  if(game.mt>game.stopAt){ game.music=false; game.window=90;
+   fans.forEach(f=>f.speed=3);
+   hintFlash('❄️ FREEZE! TAP THE BUTTON! ❄️',0); }
+ } else if(game.window>0){
+  game.window--;
+  if(game.window===0){ tone(1000,.1,'sine',.1); tone(1300,.1,'sine',.1);
+   say('hee hee, you moved!'); hintFlash('You moved! Try again! 😄',2000);
+   fans.forEach(f=>f.speed=0); game.resume=70; }
+ }
+}
+/* ---- AIRPLANE ---- */
+function gamePlane(){
+ gameKind='plane'; clearFans(); $('game').innerHTML='';
+ $('title').textContent='AIRPLANE · FLY: 0s';
+ makeFan({x:300,y:170,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ makeFan({x:700,y:170,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ const t=document.createElementNS(NS,'text');
+ t.setAttribute('font-size','44'); t.setAttribute('text-anchor','middle'); t.textContent='✈️';
+ t.style.cursor='pointer'; $('game').appendChild(t);
+ game={plane:{x:120,y:350,vx:1.7,vy:-1,el:t,flying:true,air:0,best:0,got:false}};
+ t.addEventListener('pointerdown',()=>{ const p=game.plane;
+  if(!p.flying){ p.flying=true; p.y=560; p.vy=-4; p.air=0; tone(700,.12,'sine',.12); say('Take off!'); } });
+ const C=$('controls'); C.innerHTML='';
+ const back=document.createElement('button'); back.className='bigbtn purple'; back.textContent='◀ GAMES';
+ back.onclick=()=>{ac();modePlay();}; C.appendChild(back);
+ setBG();
+ hintFlash('Spin the fans to keep the airplane flying! Tap fans or use the remote 🕹️',5000);
+ say('Keep the airplane in the sky! Make the fans blow!');
+}
+function stepPlane(){
+ const p=game.plane; if(!p)return;
+ if(!p.flying){ p.el.setAttribute('x',p.x); p.el.setAttribute('y',600); return; }
+ p.vy+=0.045;
+ fans.forEach(f=>{ if(Math.abs(p.x-f.x)<210 && p.y>f.y-30) p.vy-=f.speed*0.035; });
+ p.vy=Math.max(-2.4,Math.min(3.2,p.vy));
+ p.x+=p.vx; p.y+=p.vy;
+ if(p.x<50||p.x>950){ p.vx*=-1; p.el.setAttribute('transform',''); }
+ if(p.y<60){ p.y=60; p.vy=0.5; }
+ if(p.y>590){ p.flying=false; p.y=600; say('It landed! Tap the airplane!');
+  hintFlash('Tap the airplane to fly again! ✈️',3000); }
+ else { p.air++;
+  const secs=Math.floor(p.air/60);
+  if(secs!==p.best){ p.best=secs; $('title').textContent='AIRPLANE · FLY: '+secs+'s'; }
+  if(secs>=15&&!p.got){ p.got=true; award('plane'); confettiBurst(50); say('Fifteen seconds! You are a pilot!'); } }
+ p.el.setAttribute('x',p.x); p.el.setAttribute('y',p.y);
+ const sc=p.vx<0?'scale(-1,1) translate('+(-2*p.x)+',0)':'';
+ p.el.setAttribute('transform',sc);
+}
+function stepGame(){
+ if(mode!=='play'||!gameKind)return;
+ if(gameKind==='simon')stepSimon();
+ if(gameKind==='freeze')stepFreeze();
+ if(gameKind==='plane')stepPlane();
+}
+/* ============ BEDTIME ============ */
+let bedtime=false, lullT=0;
+const LULL=[392,330,294,262,294,330];
+function stepBedtime(){
+ if(!bedtime)return;
+ lullT++;
+ if(lullT%55===0) tone(LULL[(lullT/55|0)%LULL.length],.5,'sine',.05);
+}
+/* ============ LIGHTNING & RAINBOW ============ */
+let boltT=0, rainbowT=0;
+function stepStorm(){
+ if(season===3 && Math.random()<.002 && boltT<=0){ boltT=10;
+  tone(70,.7,'sawtooth',.12); setTimeout(()=>tone(55,.9,'sawtooth',.1),150); }
+ if(boltT>0){ boltT--;
+  $('sky').style.boxShadow = boltT>6? 'inset 0 0 0 2000px rgba(255,255,240,.55)':'none';
+  if(boltT===0)$('sky').style.boxShadow='none'; }
+ if(rainbowT>0){ rainbowT--; if(rainbowT===0)$('game').querySelectorAll('.rb').forEach(e=>e.remove()); }
+}
+function showRainbow(){
+ rainbowT=420;
+ const cols=['#ff5e5e','#ffb340','#ffe14d','#5ad46e','#6ec6ff','#b28dff'];
+ cols.forEach((c,i)=>{ const a=document.createElementNS(NS,'path');
+  a.setAttribute('class','rb');
+  a.setAttribute('d',`M 60 640 A ${440-i*16} ${440-i*16} 0 0 1 940 640`);
+  a.setAttribute('stroke',c); a.setAttribute('stroke-width','14'); a.setAttribute('fill','none'); a.setAttribute('opacity','.75');
+  $('game').appendChild(a); });
+ say('A rainbow!'); sparkle();
 }
 /* ============ MODE: FIX-IT ============ */
 function modeFixit(){
@@ -678,7 +939,8 @@ $('nightToggle').onclick=()=>{ ac(); night=!night;
  tone(night?330:660,.2,'sine',.12);
  fans.forEach(refreshFan); setBG();
  hintFlash(night?'Night time! Pull the light chains! 💡':'Good morning! ☀️',3000); };
-$('seasonToggle').onclick=()=>{ ac(); season=(season+1)%4;
+$('seasonToggle').onclick=()=>{ ac(); const prev=season; season=(season+1)%4;
+ if(prev===3&&season===0) showRainbow();
  $('seasonToggle').textContent=SEASONS[season].ic; tone(500+season*120,.14,'sine',.12);
  setBG();
  const m=['Sunny day! ☀️','Falling leaves! The fans blow them! 🍂','Snow day! Real fans go backwards in winter — try ↔️!','Rainy day! 🌧️'][season];
@@ -689,6 +951,41 @@ $('stickerClose').onclick=()=>{ ac(); $('stickerPanel').classList.remove('show')
 $('talkToggle').classList.add('on');
 $('talkToggle').onclick=()=>{ ac(); talkOn=!talkOn; $('talkToggle').classList.toggle('on',talkOn);
  if(talkOn)say('I can talk!'); else try{speechSynthesis.cancel();}catch(e){} tone(talkOn?800:400,.12,'sine',.1); };
+$('bedToggle').onclick=()=>{ ac(); bedtime=!bedtime;
+ $('bedToggle').classList.toggle('on',bedtime);
+ $('bedToggle').textContent=bedtime?'🌞':'😴';
+ if(bedtime){ night=true; $('nightToggle').classList.add('on'); $('nightToggle').textContent='☀️';
+   fans.forEach(f=>{ if(f.built&&!(f.fx&&!f.fx.done))f.speed=Math.min(f.speed||1,1); refreshFan(f); });
+   setBG(); say('Sleepy time. Good night, fans.'); hintFlash('Shhh... bedtime mode 😴',3000); }
+ else { night=false; $('nightToggle').classList.remove('on'); $('nightToggle').textContent='🌙';
+   fans.forEach(refreshFan); setBG(); say('Good morning!'); } };
+/* photo room */
+function applyPhoto(url){
+ if(url){ $('room').style.backgroundImage=`linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15)),url(${url})`;
+  $('room').style.backgroundSize='cover'; $('room').style.backgroundPosition='center';
+  $('photoToggle').classList.add('on'); }
+ else { $('room').style.backgroundImage=''; $('photoToggle').classList.remove('on'); setBG(); }
+}
+let roomPhoto=null;
+try{ roomPhoto=localStorage.getItem('fanFriendsRoom'); }catch(e){}
+if(roomPhoto)applyPhoto(roomPhoto);
+$('photoToggle').onclick=()=>{ ac();
+ if(roomPhoto){ roomPhoto=null; try{localStorage.removeItem('fanFriendsRoom');}catch(e){}
+  applyPhoto(null); say('Photo off!'); return; }
+ $('photoIn').click(); };
+$('photoIn').addEventListener('change',e=>{
+ const file=e.target.files&&e.target.files[0]; if(!file)return;
+ const rd=new FileReader();
+ rd.onload=()=>{ const img=new Image();
+  img.onload=()=>{ const cv=document.createElement('canvas');
+   const sc=Math.min(1, 900/img.width);
+   cv.width=img.width*sc; cv.height=img.height*sc;
+   cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+   roomPhoto=cv.toDataURL('image/jpeg',.7);
+   try{localStorage.setItem('fanFriendsRoom',roomPhoto);}catch(e){}
+   applyPhoto(roomPhoto); sparkle(); say('Your room!'); };
+  img.src=rd.result; };
+ rd.readAsDataURL(file); e.target.value=''; });
 modeBuild(); loop();
 
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
