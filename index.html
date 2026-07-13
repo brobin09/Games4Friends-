@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fan Friends! 🌀</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fan Friends">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#6ec6ff">
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:manipulation;}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Comic Sans MS','Chalkboard SE','Marker Felt',sans-serif;}
+#room{position:fixed;inset:0;transition:background 1s;display:flex;flex-direction:column;}
+#modebar{display:flex;justify-content:center;gap:8px;padding:8px;z-index:10;}
+.modebtn{border:none;border-radius:18px;font-size:clamp(16px,3.4vw,24px);padding:8px 16px;cursor:pointer;
+ font-family:inherit;background:rgba(255,255,255,.75);box-shadow:0 4px 0 rgba(0,0,0,.2);}
+.modebtn.on{background:#fff;outline:5px solid #ffd93d;}
+.modebtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.2);}
+#sky{flex:1;position:relative;overflow:hidden;}
+#title{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:clamp(18px,4.4vw,34px);
+ color:#fff;text-shadow:3px 3px 0 rgba(0,0,0,.25);pointer-events:none;z-index:5;}
+#fansvg{position:absolute;inset:0;width:100%;height:100%;}
+#tray{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:6;}
+.traypiece{width:clamp(58px,13vw,100px);height:clamp(58px,13vw,100px);cursor:pointer;
+ filter:drop-shadow(0 4px 0 rgba(0,0,0,.2));animation:bob 1.4s ease-in-out infinite;}
+.traypiece:nth-child(2){animation-delay:.2s}.traypiece:nth-child(3){animation-delay:.4s}
+.traypiece:nth-child(4){animation-delay:.6s}.traypiece:nth-child(5){animation-delay:.8s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#controls{background:rgba(255,255,255,.92);border-top:6px solid rgba(0,0,0,.12);
+ display:flex;justify-content:center;align-items:center;gap:8px;padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex-wrap:wrap;min-height:76px;}
+.bigbtn{border:none;border-radius:22px;font-size:clamp(26px,7vw,42px);line-height:1;
+ padding:12px 16px;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.25);background:#ffd93d;
+ transition:transform .08s;font-family:inherit;}
+.bigbtn:active{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.25);}
+.bigbtn.on{outline:6px solid #fff;background:#7ae582;}
+.bigbtn.party{background:#ff8fb1;} .bigbtn.purple{background:#b28dff;} .bigbtn.blue{background:#6ec6ff;}
+#hint{position:absolute;bottom:110px;left:0;right:0;text-align:center;font-size:clamp(16px,3.6vw,26px);
+ color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);pointer-events:none;z-index:5;}
+.pop{animation:pop .35s ease-out;}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.confetti{position:absolute;width:13px;height:13px;border-radius:3px;pointer-events:none;z-index:4;}
+.swatchrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:100%;}
+.swatch{width:clamp(44px,10vw,64px);height:clamp(44px,10vw,64px);border-radius:16px;border:4px solid #fff;
+ box-shadow:0 4px 0 rgba(0,0,0,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,5vw,34px);}
+.swatch.on{outline:5px solid #26221a;}
+#remote{position:absolute;right:10px;bottom:118px;background:#fff;border-radius:26px;
+ padding:14px 12px 12px;box-shadow:0 8px 0 rgba(0,0,0,.3);display:none;z-index:8;border:5px solid #26221a;}
+#remote.show{display:block;}
+#remote::before{content:"";position:absolute;top:-22px;left:50%;width:6px;height:20px;background:#26221a;border-radius:3px;}
+#remote::after{content:"";position:absolute;top:-30px;left:calc(50% - 3px);width:12px;height:12px;background:#ff5e5e;border-radius:50%;border:3px solid #26221a;}
+#remote .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#remote button{border:3px solid #26221a;border-radius:16px;font-size:clamp(24px,5vw,34px);
+ padding:10px 14px;cursor:pointer;background:#ffe98a;box-shadow:0 4px 0 #26221a;font-family:inherit;}
+#remote button:active{transform:translateY(3px);box-shadow:0 1px 0 #26221a;}
+.scenebtn{position:absolute;top:6px;width:clamp(46px,9vw,62px);height:clamp(46px,9vw,62px);
+ border-radius:50%;border:4px solid rgba(255,255,255,.9);background:rgba(255,255,255,.35);
+ font-size:clamp(22px,5vw,32px);cursor:pointer;z-index:9;box-shadow:0 4px 0 rgba(0,0,0,.2);}
+.scenebtn:active{transform:translateY(3px);}
+#nightToggle{left:8px;} #remoteToggle{right:8px;}
+#remoteToggle.on,#nightToggle.on,#talkToggle.on{background:#ffd93d;}
+#seasonToggle{left:8px;top:76px;} #stickerToggle{right:8px;top:76px;} #talkToggle{right:8px;top:146px;}
+#bedToggle{left:8px;top:146px;} #photoToggle{left:8px;top:216px;}
+#bedToggle.on,#photoToggle.on{background:#ffd93d;}
+#modebar{flex-wrap:wrap;}
+.gamecard{border:none;border-radius:26px;font-family:inherit;cursor:pointer;background:#fff;
+ box-shadow:0 6px 0 rgba(0,0,0,.25);padding:14px 18px;font-size:clamp(18px,4.4vw,28px);}
+.gamecard:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.25);}
+.gamecard .big{display:block;font-size:clamp(34px,9vw,54px);}
+#stickerPanel{position:absolute;inset:6% 6%;background:#fff;border:6px solid #26221a;border-radius:26px;
+ z-index:20;display:none;padding:14px;overflow:auto;}
+#stickerPanel.show{display:block;}
+#stickerPanel h2{text-align:center;font-size:clamp(20px,5vw,32px);margin:4px 0 10px;font-family:inherit;}
+#stickerGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;}
+.sticker{border:3px dashed #bbb;border-radius:18px;padding:8px 4px;text-align:center;background:#f6f3ea;}
+.sticker .em{font-size:clamp(30px,7vw,44px);filter:grayscale(1);opacity:.35;}
+.sticker .nm{font-size:11px;color:#888;}
+.sticker.got{border:3px solid #ffd93d;background:#fffbe8;transform:rotate(-2deg);}
+.sticker.got .em{filter:none;opacity:1;} .sticker.got .nm{color:#26221a;font-weight:bold;}
+#stickerClose{display:block;margin:12px auto 0;}
+#stickerPop{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(0);z-index:25;
+ background:#fffbe8;border:6px solid #ffd93d;border-radius:26px;padding:16px 26px;text-align:center;
+ pointer-events:none;transition:transform .3s cubic-bezier(.2,1.6,.4,1);}
+#stickerPop.show{transform:translate(-50%,-50%) scale(1) rotate(-3deg);}
+#stickerPop .em{font-size:64px;} #stickerPop .nm{font-size:18px;font-weight:bold;}
+@media (prefers-reduced-motion:reduce){.traypiece{animation:none}}
+</style>
+</head>
+<body>
+<div id="room">
+  <div id="modebar">
+    <button class="modebtn on" id="mBuild">🔨 BUILD</button>
+    <button class="modebtn" id="mParty">🎉 FAN PARTY</button>
+    <button class="modebtn" id="mCreate">🎨 MAKE MY FAN</button>
+    <button class="modebtn" id="mFixit">🔧 FIX-IT</button>
+    <button class="modebtn" id="mPlay">🎮 PLAY</button>
+    <button class="modebtn" id="mPet">💜 PET</button>
+  </div>
+  <div id="sky">
+    <div id="title"></div>
+    <svg id="fansvg" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
+      <defs><radialGradient id="glowg"><stop offset="0%" stop-color="#fff26e" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#fff26e" stop-opacity="0"/></radialGradient></defs>
+      <g id="decor"></g>
+      <rect x="0" y="0" width="1000" height="26" fill="rgba(255,255,255,.5)"/>
+      <g id="fans"></g>
+      <g id="particles"></g>
+      <g id="cake"></g>
+      <g id="game"></g>
+      <g id="bubbles"></g>
+      <g id="windfx"></g>
+    </svg>
+    <button class="scenebtn" id="nightToggle" title="night time">🌙</button>
+    <button class="scenebtn" id="remoteToggle" title="remote control">🕹️</button>
+    <button class="scenebtn" id="seasonToggle" title="weather">☀️</button>
+    <button class="scenebtn" id="stickerToggle" title="stickers">⭐</button>
+    <button class="scenebtn" id="talkToggle" title="talking" >🗣️</button>
+    <button class="scenebtn" id="bedToggle" title="bedtime">😴</button>
+    <button class="scenebtn" id="photoToggle" title="my room photo">📷</button>
+    <input type="file" id="photoIn" accept="image/*" style="display:none">
+    <div id="stickerPanel"><h2>⭐ MY STICKERS ⭐</h2><div id="stickerGrid"></div>
+      <button id="stickerClose" class="bigbtn">OK!</button></div>
+    <div id="stickerPop"><div class="em"></div><div class="nm"></div></div>
+    <div id="remote"><div class="rgrid">
+      <button data-r="s0">✋</button><button data-r="s1">🐢</button>
+      <button data-r="s2">🐰</button><button data-r="s3">🚀</button>
+      <button data-r="light">💡</button><button data-r="rev">↔️</button>
+    </div></div>
+    <div id="hint"></div>
+    <div id="tray"></div>
+  </div>
+  <div id="controls"></div>
+</div>
+
+<script>
+/* ============ THEMES (blade art) ============ */
+const THEMES=[
+ {name:'RAINBOW FAN', bg:['#6ec6ff','#3f8fd2'], bgLit:['#9be1ff','#5eb2ef'], blades:4, decor:'clouds',
+  blade:(i)=>{const cols=['#ff5e5e','#ffb340','#ffe14d','#5ad46e'];
+   return `<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${cols[i%4]}" stroke="#ffffff" stroke-width="6"/><circle cx="120" cy="0" r="10" fill="#fff" opacity=".7"/>`;}},
+ {name:'FLOWER FAN', bg:['#a8e063','#56ab2f'], bgLit:['#d4f7a1','#7cc650'], blades:5, decor:'bees',
+  blade:()=>`<ellipse cx="95" cy="0" rx="85" ry="34" fill="#ff8fb1" stroke="#fff" stroke-width="6"/><ellipse cx="95" cy="0" rx="45" ry="16" fill="#ffc7da"/>`,
+  hubExtra:'<circle r="26" fill="#ffd93d" stroke="#e8a91d" stroke-width="5"/>'},
+ {name:'PIZZA FAN', bg:['#ffb75e','#ed8f03'], bgLit:['#ffd394','#f5a623'], blades:6, decor:'sparkles',
+  blade:()=>`<path d="M0 0 L160 -30 Q 176 0 160 30 Z" fill="#ffcf6e" stroke="#d97b29" stroke-width="6"/><path d="M148 -26 Q 168 0 148 26 L160 30 Q 176 0 160 -30 Z" fill="#e8593a"/><circle cx="70" cy="-6" r="9" fill="#e8593a"/><circle cx="110" cy="8" r="9" fill="#e8593a"/><circle cx="95" cy="-14" r="7" fill="#3f9d5a"/>`},
+ {name:'SPACE FAN', bg:['#2b2d5e','#0f1030'], bgLit:['#4a4d9e','#232463'], blades:4, decor:'stars',
+  blade:(i)=>`<path d="M0 -12 L150 -34 L172 0 L150 34 L0 12 Z" fill="${i%2?'#b28dff':'#6ec6ff'}" stroke="#fff" stroke-width="6"/><text x="120" y="10" font-size="30" text-anchor="middle">⭐</text>`,
+  hubExtra:'<circle r="26" fill="#ffe98a" stroke="#fff" stroke-width="4"/>'},
+ {name:'WATERMELON FAN', bg:['#7ae582','#25a244'], bgLit:['#aef4b4','#4cc26a'], blades:5, decor:'sparkles',
+  blade:()=>`<path d="M0 0 L158 -32 Q 178 0 158 32 Z" fill="#ff6b81" stroke="#2e8b57" stroke-width="8"/><circle cx="80" cy="-4" r="5" fill="#26221a"/><circle cx="112" cy="8" r="5" fill="#26221a"/><circle cx="120" cy="-12" r="5" fill="#26221a"/>`},
+ {name:'BUTTERFLY FAN', bg:['#ffd1ff','#fab2ff'], bgLit:['#ffe6ff','#ffd1ff'], blades:4, decor:'clouds',
+  blade:(i)=>`<path d="M0 0 Q 70 -70 150 -40 Q 185 -10 150 8 Q 80 30 0 0 Z" fill="${i%2?'#b28dff':'#ff8fb1'}" stroke="#fff" stroke-width="6"/><circle cx="105" cy="-22" r="12" fill="#fff" opacity=".8"/><circle cx="135" cy="-14" r="8" fill="#fff" opacity=".8"/>`},
+ {name:'DINO FAN', bg:['#7cc650','#3e7d32'], bgLit:['#a5e07c','#5a9e4a'], blades:4, decor:'dino',
+  blade:()=>`<path d="M0 -12 L150 -30 Q176 0 150 30 L0 12 Z" fill="#5ad46e" stroke="#2e8b57" stroke-width="6"/><path d="M40 -20 l10 -14 10 14 Z M75 -25 l10 -14 10 14 Z M110 -27 l10 -14 10 14 Z" fill="#7ae582" stroke="#2e8b57" stroke-width="4"/>`,
+  hubExtra:'<circle r="26" fill="#5ad46e" stroke="#2e8b57" stroke-width="5"/>'},
+ {name:'UNICORN FAN', bg:['#ffd1ff','#c3a6ff'], bgLit:['#ffe6ff','#dcc8ff'], blades:5, decor:'sparkles',
+  blade:(i)=>`<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${i%2?'#ff8fb1':'#c3a6ff'}" stroke="#fff" stroke-width="6"/><text x="118" y="10" font-size="26" text-anchor="middle">⭐</text>`,
+  hubExtra:'<path d="M0 -46 L9 -20 L-9 -20 Z" fill="#ffd93d" stroke="#e8a91d" stroke-width="3"/><circle r="26" fill="#fff" stroke="#ffb6d9" stroke-width="5"/>'},
+ {name:'FIRE TRUCK FAN', bg:['#9fb8c8','#5d7488'], bgLit:['#c4d6e2','#7e94a8'], blades:4, decor:'city',
+  blade:()=>`<path d="M0 -13 L160 -26 Q 174 0 160 26 L0 13 Z" fill="#e8433a" stroke="#fff" stroke-width="6"/><line x1="30" y1="0" x2="150" y2="0" stroke="#fff" stroke-width="5"/><line x1="50" y1="-9" x2="50" y2="9" stroke="#fff" stroke-width="4"/><line x1="85" y1="-10" x2="85" y2="10" stroke="#fff" stroke-width="4"/><line x1="120" y1="-9" x2="120" y2="9" stroke="#fff" stroke-width="4"/>`,
+  hubExtra:'<circle r="26" fill="#e8433a" stroke="#8f1f18" stroke-width="5"/><circle cy="-14" r="7" fill="#ffe14d" stroke="#e8a91d" stroke-width="2"/>'},
+ {name:'OCEAN FAN', bg:['#37c3d8','#0a6e8a'], bgLit:['#6fdbe8','#1e94ae'], blades:5, decor:'ocean',
+  blade:()=>`<path d="M0 -10 Q 60 -40 120 -22 Q 170 -8 172 0 Q 170 8 120 22 Q 60 40 0 10 Z" fill="#2f9fd8" stroke="#fff" stroke-width="6"/><text x="105" y="10" font-size="26" text-anchor="middle">🐟</text>`,
+  hubExtra:'<circle r="26" fill="#6fdbe8" stroke="#1e94ae" stroke-width="5"/>'},
+];
+/* blended "Newton disc" color per theme index (rainbow…ocean) */
+const MIX=['#d6b156','#ff9fbe','#f0a95a','#96aaf0','#e07a76','#d99ed8','#5ad46e','#e1bce8','#e8433a','#37a8c8'];
+/* ============ CREATE-MODE PARTS ============ */
+const SHAPES=[
+ {icon:'🏓', fn:c=>`<path d="M0 -14 Q 90 -46 168 -18 Q 176 0 168 18 Q 90 46 0 14 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
+ {icon:'🌸', fn:c=>`<ellipse cx="95" cy="0" rx="85" ry="34" fill="${c}" stroke="#fff" stroke-width="6"/><ellipse cx="95" cy="0" rx="42" ry="15" fill="#ffffff" opacity=".5"/>`},
+ {icon:'🍕', fn:c=>`<path d="M0 0 L160 -30 Q 176 0 160 30 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
+ {icon:'⭐', fn:c=>`<path d="M0 -12 L150 -34 L172 0 L150 34 L0 12 Z" fill="${c}" stroke="#fff" stroke-width="6"/><circle cx="130" cy="0" r="9" fill="#fff" opacity=".8"/>`},
+ {icon:'🦋', fn:c=>`<path d="M0 0 Q 70 -70 150 -40 Q 185 -10 150 8 Q 80 30 0 0 Z" fill="${c}" stroke="#fff" stroke-width="6"/>`},
+ {icon:'🍃', fn:c=>`<path d="M0 0 Q 80 -50 165 0 Q 80 50 0 0 Z" fill="${c}" stroke="#fff" stroke-width="6"/><path d="M10 0 Q 85 0 158 0" stroke="#fff" stroke-width="4" fill="none" opacity=".7"/>`},
+];
+const COLORS=['#ff5e5e','#ffb340','#ffe14d','#5ad46e','#6ec6ff','#b28dff','#ff8fb1','#26d7c4'];
+const FACES=[
+ {icon:'😊', svg:'<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -8 8 Q 0 15 8 8" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/>'},
+ {icon:'😛', svg:'<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -7 7 Q 0 13 7 7" stroke="#26221a" stroke-width="3" fill="none"/><ellipse cx="2" cy="12" rx="4" ry="6" fill="#ff6b81"/>'},
+ {icon:'😎', svg:'<rect x="-14" y="-8" width="12" height="9" rx="3" fill="#26221a"/><rect x="2" y="-8" width="12" height="9" rx="3" fill="#26221a"/><line x1="-2" y1="-5" x2="2" y2="-5" stroke="#26221a" stroke-width="2.5"/><path d="M -7 9 Q 0 14 7 9" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/>'},
+ {icon:'🐱', svg:'<path d="M -16 -12 L -10 -2 L -20 -4 Z" fill="#26221a"/><path d="M 16 -12 L 10 -2 L 20 -4 Z" fill="#26221a"/><circle cx="-7" cy="-2" r="4" fill="#26221a"/><circle cx="7" cy="-2" r="4" fill="#26221a"/><path d="M -6 8 Q -3 11 0 8 Q 3 11 6 8" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/>'},
+];
+
+/* ============ AUDIO ============ */
+let AC=null, windGain=null;
+function ac(){ if(!AC){ try{
+  AC=new (window.AudioContext||window.webkitAudioContext)();
+  const len=AC.sampleRate*2, buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  const s=AC.createBufferSource(); s.buffer=buf; s.loop=true;
+  const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=300;
+  windGain=AC.createGain(); windGain.gain.value=0;
+  s.connect(f); f.connect(windGain); windGain.connect(AC.destination); s.start();
+ }catch(e){} } return AC; }
+function tone(f,d,type,v){ const a=ac(); if(!a)return; const o=a.createOscillator(),g=a.createGain();
+ o.type=type||'sine'; o.frequency.value=f; g.gain.value=v||.12; o.connect(g); g.connect(a.destination);
+ o.start(); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d); o.stop(a.currentTime+d); }
+function popSnd(){ tone(500,.1,'sine',.15); setTimeout(()=>tone(900,.12,'sine',.15),60); }
+function sparkle(){ [660,880,1100,1320].forEach((f,i)=>setTimeout(()=>tone(f,.18,'triangle',.1),i*90)); }
+function boop(n){ tone(300+n*160,.12,'square',.08); }
+function bubblePop(){ tone(900+Math.random()*500,.07,'sine',.14); }
+function partyTune(){ [523,659,784,1047,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.16,'triangle',.11),i*110)); }
+
+/* ============ FAN OBJECT ============ */
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+let fans=[], mode='build', bubblesOn=false, bubbles=[], night=false;
+let season=0, particles=[], cakeOn=false, candles=[], blowTimer=0, talkOn=true;
+const SEASONS=[{ic:'☀️'},{ic:'🍂'},{ic:'❄️'},{ic:'🌧️'}];
+/* ---------- speech ---------- */
+function say(t){ if(!talkOn)return; try{ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(t); u.rate=.95; u.pitch=1.25; speechSynthesis.speak(u);}catch(e){} }
+function announceSpeed(n){ say(['stop','one','two','threee!'][n]);
+ if(n>0)award('first-spin'); if(n===3)award('rocket'); }
+/* ---------- stickers ---------- */
+const STICKERS=[['first-spin','🌀','First Spin!'],['rocket','🚀','Rocket Speed!'],
+ ['backwards','🔄','Backwards!'],['night-light','💡','Night Light!'],['all-go','🎉','Party Master!'],
+ ['bubble-pop','🫧','Bubble Popper!'],['eight-blades','8️⃣','Eight Blades!'],['my-fan','🎨','Fan Maker!'],
+ ['fixed','🔧','Fan Doctor!'],['candles','🎂','Birthday Wind!'],
+ ['color-mix','🌈','Color Mixer!'],['simon','👂','Good Listener!'],
+ ['freeze','🧊','Freeze Dancer!'],['plane','✈️','Pilot!'],['pet-love','❤️','Best Friend!']];
+let earned={};
+try{ earned=JSON.parse(localStorage.getItem('fanFriendsStickers')||'{}'); }catch(e){ earned={}; }
+function saveStickers(){ try{ localStorage.setItem('fanFriendsStickers',JSON.stringify(earned)); }catch(e){} }
+function award(id){ if(earned[id])return; earned[id]=1; saveStickers(); sparkle();
+ const st=STICKERS.find(x=>x[0]===id); if(!st)return;
+ const P=document.getElementById('stickerPop');
+ P.querySelector('.em').textContent=st[1]; P.querySelector('.nm').textContent=st[2];
+ P.classList.add('show'); say('You got a sticker! '+st[2]);
+ clearTimeout(award._t); award._t=setTimeout(()=>P.classList.remove('show'),2200); }
+function renderStickers(){ const G=document.getElementById('stickerGrid'); G.innerHTML='';
+ STICKERS.forEach(st=>{ const d=document.createElement('div');
+  d.className='sticker'+(earned[st[0]]?' got':'');
+  d.innerHTML=`<div class="em">${st[1]}</div><div class="nm">${earned[st[0]]?st[2]:'?'}</div>`;
+  G.appendChild(d); }); }
+const custom={shape:0,color:4,face:0,blades:5};
+
+function bladeArtFor(f,i){
+ if(f.pet) return SHAPES[1].fn(i%2?'#ff8fb1':'#ffc7da');
+ if(f.custom) return SHAPES[custom.shape].fn(COLORS[custom.color]);
+ return THEMES[f.theme].blade(i);
+}
+const SLEEPFACE='<path d="M -12 -3 Q -8 1 -4 -3" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M 4 -3 Q 8 1 12 -3" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M -6 9 Q 0 12 6 9" stroke="#26221a" stroke-width="3" fill="none" stroke-linecap="round"/>';
+const SADFACE='<circle cx="-8" cy="-3" r="4.5" fill="#26221a"/><circle cx="8" cy="-3" r="4.5" fill="#26221a"/><path d="M -8 13 Q 0 6 8 13" stroke="#26221a" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="15" cy="-11" r="3.5" fill="#6ec6ff"/>';
+function faceArtFor(f){
+ if(f.pet && petState.sleepy) return SLEEPFACE;
+ if(f.fx && !f.fx.done) return SADFACE;
+ if(f.custom) return FACES[custom.face].svg;
+ return FACES[0].svg;
+}
+function makeFan(opts){
+ const f=Object.assign({x:500,y:190,scale:1,theme:0,speed:0,angle:0,vel:0,light:false,dir:1,
+   custom:false,built:true,placed:0,globe:true},opts);
+ const g=document.createElementNS(NS,'g');
+ g.innerHTML=`
+  <line x1="0" y1="-160" x2="0" y2="-70" stroke="#7a5c3e" stroke-width="12" stroke-linecap="round"/>
+  <g class="rotor"></g>
+  <circle class="mixc" r="0" opacity="0"/>
+  <circle class="mixc2" r="0" opacity="0"/>
+  <g class="hub"></g>
+  <g class="globeg" transform="translate(0,60)">
+    <circle class="glowc" r="0" fill="url(#glowg)"/>
+    <circle class="bulb" r="30" fill="#fff8dd" stroke="#e0c86e" stroke-width="5"/>
+    <g class="globeface"></g>
+  </g>
+  <g class="chainF" style="cursor:pointer">
+    <line x1="20" y1="86" x2="30" y2="128" stroke="#888" stroke-width="5" stroke-dasharray="2 6"/>
+    <circle cx="30" cy="140" r="16" fill="#ff6b6b" stroke="#c0392b" stroke-width="4"/>
+    <text x="30" y="147" text-anchor="middle" font-size="18">🌀</text>
+  </g>
+  <g class="chainL" style="cursor:pointer">
+    <line x1="-20" y1="86" x2="-30" y2="128" stroke="#888" stroke-width="5" stroke-dasharray="2 6"/>
+    <circle cx="-30" cy="140" r="16" fill="#ffd93d" stroke="#b8860b" stroke-width="4"/>
+    <text x="-30" y="147" text-anchor="middle" font-size="18">💡</text>
+  </g>`;
+ $('fans').appendChild(g);
+ f.g=g; f.rotor=g.querySelector('.rotor'); f.hub=g.querySelector('.hub');
+ f.bulb=g.querySelector('.bulb'); f.gface=g.querySelector('.globeface');
+ refreshFan(f);
+ // interactions: tap = speed cycle, tap globe = light, drag = flick spin
+ let px=null, moved=0;
+ function pt(e){ const t=e.touches?e.touches[0]:e; return t.clientX; }
+ g.addEventListener('pointerdown',e=>{ px=pt(e); moved=0; });
+ g.addEventListener('pointermove',e=>{ if(px===null)return; const x=pt(e);
+   f.vel += (x-px)*0.15; moved+=Math.abs(x-px); px=x; });
+ g.addEventListener('pointerup',e=>{ px=null;
+   if(moved>18) return; // it was a flick, not a tap
+   ac();
+   const inGlobe = e.target===f.bulb || e.target.parentNode===f.gface || e.target.closest('.globeg');
+   if(f.fx && !f.fx.done){
+     if(inGlobe && f.fx.flicker){ f.fx.flicker=false; popSnd(); floatEmoji(f,'💡');
+       f.bulb.setAttribute('opacity','1'); say('New bulb!'); checkFixed(f); return; }
+     if(e.target.closest('.hub') && f.fx.squeak){ f.fx.squeak=false; popSnd(); floatEmoji(f,'🛢️');
+       say('Squeak all gone!'); checkFixed(f); return; }
+     hintFlash('Fix me first! 🔧'); return; }
+   if(inGlobe){ toggleLight(f); return; }
+   if(!f.built){ hintFlash('Tap the blades below to build it! ⬇'); return; }
+   f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
+   if(f.speed===3) confettiBurst(f.x/10,'%');
+   syncGlobalUI();
+ });
+ // pull chains: fan chain cycles speed (incl. off), light chain toggles light
+ const cF=g.querySelector('.chainF'), cL=g.querySelector('.chainL');
+ function pullAnim(el){ el.setAttribute('transform','translate(0,14)'); tone(700,.05,'square',.09);
+   setTimeout(()=>{ el.setAttribute('transform',''); tone(500,.05,'square',.09); },140); }
+ cF.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac(); pullAnim(cF);
+   if(f.fx && !f.fx.done){ hintFlash('Fix me first! 🔧'); return; }
+   if(!f.built){ hintFlash('Build the fan first! ⬇'); return; }
+   if(f.pet&&petState.sleepy){ petWake(f); }
+   f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
+   if(f.speed===3) confettiBurst(f.x/10); syncGlobalUI(); });
+ cF.addEventListener('pointerup',e=>e.stopPropagation());
+ cL.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac(); pullAnim(cL); toggleLight(f); });
+ cL.addEventListener('pointerup',e=>e.stopPropagation());
+ fans.push(f);
+ return f;
+}
+function refreshFan(f){
+ f.rotor.innerHTML='';
+ const n=f.custom?custom.blades:THEMES[f.theme].blades;
+ const count=f.built?n:f.placed;
+ f.bladeEls=[];
+ for(let i=0;i<count;i++){
+  const b=document.createElementNS(NS,'g');
+  b.setAttribute('transform',`rotate(${i*(360/n)})`);
+  const inner=document.createElementNS(NS,'g');
+  inner.innerHTML=bladeArtFor(f,i);
+  b.appendChild(inner);
+  if(f.fx && !f.fx.done){
+   b.style.cursor='pointer';
+   b.addEventListener('pointerdown',e=>{ e.stopPropagation(); ac();
+    if(f.fx.wobble===i){ f.fx.wobble=null; popSnd(); floatEmoji(f,'🔧');
+      inner.setAttribute('transform',''); say('Blade fixed!'); checkFixed(f); }
+    else hintFlash('That blade is okay! Find the droopy one!'); });
+  }
+  f.bladeEls.push(inner);
+  f.rotor.appendChild(b);
+ }
+ let hubBase=(!f.custom&&!f.pet&&THEMES[f.theme].hubExtra)||'<circle r="24" fill="#fff" stroke="#c9c2b0" stroke-width="5"/>';
+ if(f.pet){ hubBase='<circle r="26" fill="#fff" stroke="#ffb6d9" stroke-width="5"/>';
+  if(petState.visits>=7) hubBase+='<path d="M -16 -24 L -16 -38 L -8 -30 L 0 -42 L 8 -30 L 16 -38 L 16 -24 Z" fill="#ffd93d" stroke="#e8a91d" stroke-width="3"/>';
+  else if(petState.visits>=3) hubBase+='<path d="M -14 -22 L 0 -48 L 14 -22 Z" fill="#b28dff" stroke="#7c5fc4" stroke-width="3"/><circle cy="-48" r="5" fill="#ffd93d"/>';
+ }
+ f.hub.innerHTML=hubBase+`<g class="eyes">${faceArtFor(f)}</g>`;
+ const gl=f.g.querySelector('.glowc'); if(gl) gl.setAttribute('r', (night&&f.light)?85:(f.light?40:0));
+ f.bulb.setAttribute('fill', f.light?'#fff26e':'#fff8dd');
+ f.bulb.setAttribute('stroke', f.light?'#ffb340':'#e0c86e');
+ f.gface.innerHTML=f.light?'<circle cx="-9" cy="-4" r="4" fill="#26221a"/><circle cx="9" cy="-4" r="4" fill="#26221a"/><path d="M -9 8 Q 0 16 9 8" stroke="#26221a" stroke-width="3" fill="none"/>':'';
+}
+function toggleLight(f){ if(f.fx&&!f.fx.done){ hintFlash('Fix me first! 🔧'); return; }
+ f.light=!f.light; tone(f.light?880:440,.15,'sine',.12); refreshFan(f); setBG();
+ if(night&&f.light)award('night-light'); }
+function floatEmoji(f,em){ const t=document.createElementNS(NS,'text');
+ t.setAttribute('x',f.x); t.setAttribute('y',f.y-40); t.setAttribute('font-size','44'); t.setAttribute('text-anchor','middle');
+ t.textContent=em; $('windfx').appendChild(t);
+ let y=f.y-40,o=1; const iv=setInterval(()=>{ y-=2; o-=.03; t.setAttribute('y',y); t.setAttribute('opacity',o);
+  if(o<=0){clearInterval(iv);t.remove();} },30); }
+function checkFixed(f){ if(f.fx.wobble===null && !f.fx.squeak && !f.fx.flicker){
+  f.fx.done=true; refreshFan(f); f.speed=2; confettiBurst(50); sparkle();
+  say('All better! Thank you, fan doctor!'); award('fixed');
+  hintFlash('All better! 🎉',4000);
+  const nb=$('nextPatient'); if(nb)nb.style.display='inline-block'; } }
+function clearFans(){ fans=[]; $('fans').innerHTML=''; }
+
+/* ============ SCENE ============ */
+function setBG(){
+ if(typeof roomPhoto!=='undefined'&&roomPhoto)return;
+ const anyLight=fans.some(f=>f.light);
+ if(!night && season>0){
+  const c=[null,['#ffd9a0','#e8933f'],['#dceefc','#9fc4e8'],['#a9b8c9','#6b7b8f']][season];
+  $('room').style.background=`linear-gradient(${c[0]},${c[1]})`; return; }
+ if(!night && mode==='fixit'){ $('room').style.background='linear-gradient(#bfe8e2,#7fc8bd)'; return; }
+ if(night){ $('room').style.background = anyLight
+   ? 'linear-gradient(#2a2f4a,#141626)' : 'linear-gradient(#171a2e,#0b0c18)';
+   return; }
+ const t=THEMES[mode==='party'? (fans[0]?fans[0].theme:0) : (fans[0]?fans[0].theme:0)]||THEMES[0];
+ const src=(mode==='create')?{bg:['#ffe9b0','#ffb85c'],bgLit:['#fff3cf','#ffcf8a']}:t;
+ const c=anyLight?src.bgLit:src.bg;
+ $('room').style.background=`linear-gradient(${c[0]},${c[1]})`;
+}
+function makeDecor(kind){
+ const D=$('decor'); D.innerHTML='';
+ const put=(x,y,s,txt)=>{const e=document.createElementNS(NS,'text');
+   e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('font-size',s);e.textContent=txt;
+   e.setAttribute('opacity','.85');D.appendChild(e);};
+ if(kind==='clouds'){put(70,110,44,'☁️');put(840,150,38,'☁️');put(150,520,34,'☁️');put(860,540,40,'☁️');}
+ if(kind==='stars'){for(let i=0;i<14;i++)put(30+Math.random()*940,60+Math.random()*540,14+Math.random()*22,'✦');put(110,140,40,'🌙');}
+ if(kind==='bees'){put(110,140,36,'🐝');put(860,120,32,'🐝');put(110,560,38,'🌷');put(860,560,38,'🌻');}
+ if(kind==='sparkles'){put(110,130,34,'✨');put(860,150,34,'✨');put(130,560,34,'✨');put(860,560,34,'✨');}
+ if(kind==='dino'){put(80,560,44,'🦖');put(880,550,40,'🌴');put(120,140,34,'🌋');put(860,130,32,'🦕');}
+ if(kind==='ocean'){put(90,560,40,'🐙');put(880,540,38,'🐠');put(110,140,32,'🫧');put(860,150,34,'⛵');}
+ if(kind==='city'){put(80,560,40,'🚒');put(880,550,36,'🏢');put(120,140,32,'🚨');put(860,130,32,'🏠');}
+ if(kind==='party'){put(60,120,40,'🎈');put(920,130,40,'🎈');put(80,560,36,'🎁');put(900,560,36,'🧁');}
+}
+function hintFlash(t,ms){ $('hint').textContent=t; clearTimeout(hintFlash._t);
+ if(ms!==0) hintFlash._t=setTimeout(()=>{ if($('hint').textContent===t)$('hint').textContent=''; },ms||2600); }
+
+/* ============ MODE: BUILD ============ */
+function modeBuild(){
+ mode='build'; clearFans(); bubblesOn=false; bubbles=[]; $('bubbles').innerHTML='';
+ const f=makeFan({x:500,y:210,scale:1.35,theme:modeBuild.theme||0,built:false,placed:0});
+ const t=THEMES[f.theme];
+ $('title').textContent=t.name; makeDecor(t.decor); setBG();
+ const tray=$('tray'); tray.innerHTML='';
+ for(let i=0;i<t.blades;i++){
+  const w=document.createElement('div'); w.className='traypiece';
+  w.innerHTML=`<svg viewBox="-10 -60 200 120" width="100%" height="100%"><g>${t.blade(i)}</g></svg>`;
+  w.onclick=()=>{ if(w.dataset.used)return; w.dataset.used=1; w.style.visibility='hidden'; ac();
+    f.placed++; refreshFan(f); popSnd();
+    if(f.placed>=t.blades){ f.built=true; tray.innerHTML=''; sparkle();
+      hintFlash('Tap the fan to make it spin! 🌀',5000); }
+  };
+  tray.appendChild(w);
+ }
+ hintFlash('Tap the blades to build your fan!',0);
+ controlsBuild(f);
+}
+function controlsBuild(f){
+ const C=$('controls'); C.innerHTML='';
+ ['✋','🐢','🐰','🚀'].forEach((ic,i)=>{
+  const b=document.createElement('button'); b.className='bigbtn'; b.id='spd'+i; b.textContent=ic;
+  b.onclick=()=>{ ac(); if(!f.built){hintFlash('Build the fan first! ⬇');return;}
+    f.speed=i; boop(i); if(i===3)confettiBurst(50,'%'); syncGlobalUI(); };
+  C.appendChild(b);
+ });
+ const l=document.createElement('button'); l.className='bigbtn'; l.textContent='💡'; l.style.background='#ffe98a';
+ l.onclick=()=>{ac();toggleLight(f);}; C.appendChild(l);
+ const n=document.createElement('button'); n.className='bigbtn purple'; n.textContent='🔁';
+ n.onclick=()=>{ ac(); modeBuild.theme=((modeBuild.theme||0)+1)%THEMES.length; sparkle(); modeBuild(); };
+ C.appendChild(n);
+ C.appendChild(cakeButton());
+ syncGlobalUI();
+}
+
+/* ============ MODE: PARTY ============ */
+function modeParty(){
+ mode='party'; clearFans(); $('tray').innerHTML='';
+ $('title').textContent='FAN PARTY!'; makeDecor('party');
+ const spots=[[250,190],[750,190],[250,450],[750,450]];
+ spots.forEach((s,i)=>makeFan({x:s[0],y:s[1],scale:.78,theme:i%THEMES.length}));
+ setBG();
+ hintFlash('Tap a fan to change its speed! Slide it to spin it yourself!',5200);
+ const C=$('controls'); C.innerHTML='';
+ const all=document.createElement('button'); all.className='bigbtn party'; all.textContent='🎉 ALL GO!';
+ all.style.fontSize='clamp(20px,5vw,32px)';
+ all.onclick=()=>{ ac(); fans.forEach(f=>{f.speed=3;f.light=true;refreshFan(f);}); partyTune();
+   award('all-go'); say('everybody go!');
+   confettiBurst(25,'%'); confettiBurst(75,'%'); setBG(); syncGlobalUI(); };
+ C.appendChild(all);
+ const stop=document.createElement('button'); stop.className='bigbtn'; stop.textContent='✋';
+ stop.onclick=()=>{ ac(); fans.forEach(f=>f.speed=0); boop(0); syncGlobalUI(); };
+ C.appendChild(stop);
+ const bub=document.createElement('button'); bub.className='bigbtn blue'; bub.textContent='🫧';
+ bub.onclick=()=>{ ac(); bubblesOn=!bubblesOn; bub.classList.toggle('on',bubblesOn);
+   hintFlash(bubblesOn?'Pop the bubbles! The fans blow them around!':'',3200); };
+ C.appendChild(bub);
+ const shuf=document.createElement('button'); shuf.className='bigbtn purple'; shuf.textContent='🎲';
+ shuf.onclick=()=>{ ac(); fans.forEach(f=>{f.theme=Math.floor(Math.random()*THEMES.length);refreshFan(f);});
+   sparkle(); };
+ C.appendChild(shuf);
+ C.appendChild(cakeButton());
+}
+
+/* ============ MODE: CREATE ============ */
+function modeCreate(){
+ mode='create'; clearFans(); $('tray').innerHTML='';
+ $('title').textContent='MAKE MY FAN!'; makeDecor('sparkles');
+ const f=makeFan({x:500,y:200,scale:1.2,custom:true});
+ setBG();
+ hintFlash('Pick blades, a color, and a face!',4000);
+ const C=$('controls'); C.innerHTML='';
+ // row 1: shapes
+ const r1=document.createElement('div'); r1.className='swatchrow';
+ SHAPES.forEach((s,i)=>{ const w=document.createElement('div');
+  w.className='swatch'+(i===custom.shape?' on':''); w.style.background='#fff'; w.textContent=s.icon;
+  w.onclick=()=>{ ac(); custom.shape=i; popSnd(); refreshFan(f);
+    r1.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on')); w.classList.add('on'); };
+  r1.appendChild(w); });
+ // row 2: colors + faces
+ const r2=document.createElement('div'); r2.className='swatchrow';
+ COLORS.forEach((c,i)=>{ const w=document.createElement('div');
+  w.className='swatch'+(i===custom.color?' on':''); w.style.background=c; w.dataset.kind='c';
+  w.onclick=()=>{ ac(); custom.color=i; popSnd(); refreshFan(f);
+    r2.querySelectorAll('.swatch[data-kind=c]').forEach(x=>x.classList.remove('on')); w.classList.add('on'); };
+  r2.appendChild(w); });
+ FACES.forEach((fc,i)=>{ const w=document.createElement('div');
+  w.className='swatch'+(i===custom.face?' on':''); w.style.background='#fff'; w.textContent=fc.icon; w.dataset.kind='f';
+  w.onclick=()=>{ ac(); custom.face=i; popSnd(); refreshFan(f);
+    r2.querySelectorAll('.swatch[data-kind=f]').forEach(x=>x.classList.remove('on')); w.classList.add('on'); };
+  r2.appendChild(w); });
+ // row 3: blade count, speed, spin
+ const r3=document.createElement('div'); r3.className='swatchrow';
+ const minus=document.createElement('button'); minus.className='bigbtn'; minus.textContent='➖';
+ minus.onclick=()=>{ ac(); if(custom.blades>3){custom.blades--; boop(1); refreshFan(f); say(custom.blades+' blades');} };
+ const plus=document.createElement('button'); plus.className='bigbtn'; plus.textContent='➕';
+ plus.onclick=()=>{ ac(); if(custom.blades<8){custom.blades++; boop(2); refreshFan(f);
+   say(custom.blades===8?'eight blades! wow!':custom.blades+' blades'); if(custom.blades===8)award('eight-blades');} };
+ const go=document.createElement('button'); go.className='bigbtn party'; go.textContent='🌀 SPIN IT!';
+ go.style.fontSize='clamp(20px,5vw,30px)';
+ go.onclick=()=>{ ac(); f.speed=(f.speed+1)%4; boop(f.speed); announceSpeed(f.speed);
+   if(f.speed>0)award('my-fan'); if(f.speed===3)confettiBurst(50); };
+ r3.appendChild(minus); r3.appendChild(plus); r3.appendChild(go);
+ C.appendChild(r1); C.appendChild(r2); C.appendChild(r3);
+}
+
+/* ============ CONFETTI & BUBBLES ============ */
+function confettiBurst(leftPct){
+ const cols=COLORS;
+ for(let i=0;i<30;i++){
+  const c=document.createElement('div'); c.className='confetti';
+  c.style.background=cols[i%cols.length];
+  c.style.left=(leftPct-5+Math.random()*10)+'%'; c.style.top='28%';
+  $('sky').appendChild(c);
+  const dx=(Math.random()-.5)*500, dy=180+Math.random()*380, rot=Math.random()*720;
+  c.animate([{transform:'translate(0,0) rotate(0)',opacity:1},
+    {transform:`translate(${dx}px,${dy}px) rotate(${rot}deg)`,opacity:0}],
+    {duration:1300+Math.random()*800,easing:'ease-out'}).onfinish=()=>c.remove();
+ }
+}
+function spawnBubble(){
+ if(bubbles.length>=12)return;
+ const b={x:60+Math.random()*880, y:660, r:16+Math.random()*18, vx:(Math.random()-.5)*.6, vy:-(0.7+Math.random()*.8)};
+ const e=document.createElementNS(NS,'circle');
+ e.setAttribute('r',b.r); e.setAttribute('fill','rgba(255,255,255,.35)');
+ e.setAttribute('stroke','rgba(255,255,255,.9)'); e.setAttribute('stroke-width','3');
+ e.style.cursor='pointer';
+ e.addEventListener('pointerdown',()=>{ bubblePop(); award('bubble-pop');
+  e.setAttribute('fill','rgba(255,255,255,.9)');
+  setTimeout(()=>{e.remove(); const k=bubbles.indexOf(b); if(k>-1)bubbles.splice(k,1);},60); });
+ $('bubbles').appendChild(e); b.e=e; bubbles.push(b);
+}
+function stepBubbles(){
+ if(bubblesOn && Math.random()<.05) spawnBubble();
+ for(let i=bubbles.length-1;i>=0;i--){
+  const b=bubbles[i];
+  // fans blow bubbles
+  fans.forEach(f=>{ if(!f.speed)return;
+   const dx=b.x-f.x, dy=b.y-f.y;
+   if(Math.abs(dx)<200*f.scale && dy>0 && dy<260){ b.vx += Math.sign(dx||1)*0.03*f.speed; b.vy += 0.02*f.speed; } });
+  b.vx*=.99; b.x+=b.vx; b.y+=b.vy; b.vy=Math.min(b.vy, -(0.4));
+  b.e.setAttribute('cx',b.x); b.e.setAttribute('cy',b.y);
+  if(b.y<-30||b.x<-40||b.x>1040){ b.e.remove(); bubbles.splice(i,1); }
+ }
+}
+
+/* ============ GLOBAL UI SYNC ============ */
+function syncGlobalUI(){
+ if(mode==='build'&&fans[0]){ for(let i=0;i<4;i++){ const b=$('spd'+i); if(b)b.classList.toggle('on',fans[0].speed===i); } }
+ if(windGain&&AC){ const top=Math.max(0,...fans.map(f=>f.speed));
+  windGain.gain.linearRampToValueAtTime(top*.05,AC.currentTime+.3); }
+}
+
+/* ============ MODE BAR ============ */
+function setModeBtn(id){ ['mBuild','mParty','mCreate','mFixit','mPlay','mPet'].forEach(m=>$(m).classList.toggle('on',m===id)); }
+$('mBuild').onclick=()=>{ ac(); setModeBtn('mBuild'); sparkle(); modeBuild(); };
+$('mParty').onclick=()=>{ ac(); setModeBtn('mParty'); sparkle(); modeParty(); };
+$('mCreate').onclick=()=>{ ac(); setModeBtn('mCreate'); sparkle(); modeCreate(); };
+$('mFixit').onclick=()=>{ ac(); setModeBtn('mFixit'); sparkle(); modeFixit(); };
+$('mPlay').onclick=()=>{ ac(); setModeBtn('mPlay'); sparkle(); modePlay(); };
+$('mPet').onclick=()=>{ ac(); setModeBtn('mPet'); sparkle(); modePet(); };
+
+/* ============ MAIN LOOP ============ */
+const faceWobble=f=>{
+ const eyes=f.hub.querySelector('.eyes'); if(!eyes)return;
+ if(f.speed===3||Math.abs(f.vel)>6){ eyes.setAttribute('transform',`translate(${Math.sin(f.angle/8)*3},0)`); }
+ else eyes.setAttribute('transform','');
+};
+function loop(){
+ fans.forEach(f=>{
+  f.vel*=.965;
+  f.angle += f.dir*(f.speed*f.speed*2.2 + f.speed*1.5) + f.vel;
+  let wob = (f.speed===3||Math.abs(f.vel)>8) ? Math.sin(f.angle/6)*3 : 0;
+  if(f.fx && !f.fx.done){
+   if(f.fx.squeak){ wob += Math.sin(Date.now()/40)*1.5;
+     if(Math.random()<.008){ tone(1500,.12,'sawtooth',.05); tone(1200,.1,'sawtooth',.04); } }
+   if(f.fx.wobble!==null && f.bladeEls && f.bladeEls[f.fx.wobble])
+     f.bladeEls[f.fx.wobble].setAttribute('transform',`rotate(${16+Math.sin(Date.now()/120)*7})`);
+   if(f.fx.flicker && Math.random()<.12)
+     f.bulb.setAttribute('opacity', Math.random()<.5?'0.25':'1');
+  }
+  f.g.setAttribute('transform',`translate(${f.x+wob},${f.y+wob*.4}) scale(${f.scale})`);
+  f.rotor.setAttribute('transform',`rotate(${f.angle})`);
+  faceWobble(f);
+  /* Newton color-mix at rocket speed */
+  const m1=f.g.querySelector('.mixc'), m2=f.g.querySelector('.mixc2');
+  if(m1){
+   if(f.speed===3){
+    const mixCol = f.pet?'#ffb0c8' : f.custom?COLORS[custom.color] : (MIX[f.theme]||'#ccc');
+    m1.setAttribute('r',176); m1.setAttribute('fill',mixCol); m1.setAttribute('opacity','.5');
+    m2.setAttribute('r',110); m2.setAttribute('fill','#ffffff'); m2.setAttribute('opacity','.15');
+    f.rotor.setAttribute('opacity','.35');
+    if(!loop._mixed){ loop._mixed=true; award('color-mix'); say('Look! The colors all mixed together!'); }
+   } else { m1.setAttribute('opacity','0'); m1.setAttribute('r',0);
+    m2.setAttribute('opacity','0'); m2.setAttribute('r',0); f.rotor.setAttribute('opacity','1'); }
+  }
+  /* bedtime droopy eyes */
+  const ey=f.hub.querySelector('.eyes');
+  if(ey&&bedtime) ey.setAttribute('transform','scale(1,0.35) translate(0,-4)');
+  if((f.speed>=2)&&Math.random()<.06){
+   const l=document.createElementNS(NS,'path');
+   const y=f.y-40+Math.random()*120, x=f.x-140+Math.random()*280;
+   l.setAttribute('d',`M ${x} ${y} q 20 8 40 0`); l.setAttribute('stroke','rgba(255,255,255,.7)');
+   l.setAttribute('stroke-width','4'); l.setAttribute('fill','none'); l.setAttribute('stroke-linecap','round');
+   $('windfx').appendChild(l); setTimeout(()=>l.remove(),380);
+  }
+ });
+ stepBubbles();
+ stepParticles();
+ stepCake();
+ stepGame();
+ stepBedtime();
+ stepStorm();
+ requestAnimationFrame(loop);
+}
+/* ============ PET STATE ============ */
+let petState={visits:1,last:'',pets:0,sleepy:false};
+try{ const st=JSON.parse(localStorage.getItem('fanFriendsPet')||'null'); if(st)petState=st; }catch(e){}
+function savePet(){ try{ localStorage.setItem('fanFriendsPet',JSON.stringify(petState)); }catch(e){} }
+/* ============ MODE: PET ============ */
+function modePet(){
+ mode='pet'; clearFans(); $('tray').innerHTML=''; showCake(false); gameKind=null;
+ const today=new Date().toDateString();
+ if(petState.last!==today){ petState.visits=(petState.visits||0)+1; petState.last=today;
+   petState.sleepy=true; savePet(); }
+ $('title').textContent='BREEZY · DAY '+petState.visits;
+ makeDecor('sparkles');
+ const f=makeFan({x:500,y:210,scale:1.3}); f.pet=true;
+ if(petState.sleepy){ f.speed=0; }
+ else { f.speed=1; f.light=true; }
+ refreshFan(f); setBG();
+ if(petState.sleepy){ say('shhh... Breezy is sleeping. Spin me to wake me up!');
+   hintFlash('Breezy is asleep! Pull the chain to wake her! 😴',0); }
+ else { say('Hi! I missed you!'); hintFlash('Pat Breezy on her nose! 💜',4000); }
+ const C=$('controls'); C.innerHTML='';
+ const pat=document.createElement('button'); pat.className='bigbtn party'; pat.textContent='💜 PAT';
+ pat.onclick=()=>{ ac(); petPat(f); };
+ C.appendChild(pat);
+ const l=document.createElement('button'); l.className='bigbtn'; l.textContent='💡'; l.style.background='#ffe98a';
+ l.onclick=()=>{ac();toggleLight(f);}; C.appendChild(l);
+}
+function petWake(f){ if(!petState.sleepy)return; petState.sleepy=false; savePet();
+ refreshFan(f); sparkle(); say('Good morning! I missed you so much!');
+ hintFlash('Breezy woke up! 🌞',3000); }
+function petPat(f){
+ if(petState.sleepy){ petWake(f); f.speed=1; return; }
+ petState.pets=(petState.pets||0)+1; savePet();
+ floatEmoji(f,'❤️'); popSnd();
+ say(['hee hee!','I love you!','that tickles!','more please!'][Math.floor(Math.random()*4)]);
+ if(petState.pets>=5)award('pet-love');
+}
+/* ============ MODE: PLAY (mini-games) ============ */
+let gameKind=null, game={};
+function modePlay(){
+ mode='play'; clearFans(); $('tray').innerHTML=''; showCake(false); gameKind=null; $('game').innerHTML='';
+ $('title').textContent='PICK A GAME!'; makeDecor('party'); setBG();
+ hintFlash('',1);
+ const C=$('controls'); C.innerHTML='';
+ [['👂','SIMON SAYS',gameSimon],['🧊','FREEZE DANCE',gameFreeze],['✈️','AIRPLANE',gamePlane]].forEach(([ic,nm,fn])=>{
+  const b=document.createElement('button'); b.className='gamecard';
+  b.innerHTML=`<span class="big">${ic}</span>${nm}`;
+  b.onclick=()=>{ ac(); sparkle(); fn(); };
+  C.appendChild(b);
+ });
+}
+/* ---- SIMON SAYS ---- */
+function gameSimon(){
+ gameKind='simon'; clearFans(); $('game').innerHTML='';
+ $('title').textContent='SIMON SAYS · ⭐0';
+ const f=makeFan({x:500,y:210,scale:1.3,theme:Math.floor(Math.random()*THEMES.length)});
+ game={f,score:0,cool:0,target:null};
+ const C=$('controls'); C.innerHTML='';
+ const back=document.createElement('button'); back.className='bigbtn purple'; back.textContent='◀ GAMES';
+ back.onclick=()=>{ac();modePlay();}; C.appendChild(back);
+ setBG(); simonNext();
+}
+function simonNext(){
+ const f=game.f;
+ const opts=[];
+ [1,2,3].forEach(n=>{ if(f.speed!==n)opts.push({t:'speed',n,txt:'Make me spin '+['','ONE','TWO','THREE'][n]+'! '+['','🐢','🐰','🚀'][n]}); });
+ if(f.speed!==0)opts.push({t:'speed',n:0,txt:'Make me STOP! ✋'});
+ opts.push({t:'light',on:!f.light,txt:f.light?'Turn my light OFF! 💡':'Turn my light ON! 💡'});
+ opts.push({t:'rev',base:f.dir,txt:'Make me go BACKWARDS! 🔄'});
+ game.target=opts[Math.floor(Math.random()*opts.length)];
+ game.cool=0;
+ hintFlash('Simon says: '+game.target.txt,0);
+ say('Simon says. '+game.target.txt.replace(/[🐢🐰🚀✋💡🔄!]/g,''));
+}
+function stepSimon(){
+ const t=game.target, f=game.f; if(!t)return;
+ if(game.cool>0){ game.cool--; if(game.cool===0)simonNext(); return; }
+ let hit=false;
+ if(t.t==='speed'&&f.speed===t.n)hit=true;
+ if(t.t==='light'&&f.light===t.on)hit=true;
+ if(t.t==='rev'&&f.dir!==t.base)hit=true;
+ if(hit){ game.score++; $('title').textContent='SIMON SAYS · ⭐'+game.score;
+  sparkle(); say('Yes! Great job!'); hintFlash('🎉 YES! 🎉',1500);
+  if(game.score===5){ award('simon'); confettiBurst(50); }
+  game.target=null; game.cool=80; game.target={t:'wait'};
+ }
+}
+/* ---- FREEZE DANCE ---- */
+const MELODY=[523,587,659,523,659,784,659,587,523,587,494,523];
+function gameFreeze(){
+ gameKind='freeze'; clearFans(); $('game').innerHTML='';
+ $('title').textContent='FREEZE DANCE · ⭐0';
+ makeFan({x:320,y:190,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ makeFan({x:680,y:190,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ game={score:0,music:true,mi:0,mt:0,stopAt:150+Math.random()*200,frozenAt:-1,window:0};
+ const C=$('controls'); C.innerHTML='';
+ const fz=document.createElement('button'); fz.className='bigbtn'; fz.textContent='✋ FREEZE!';
+ fz.style.fontSize='clamp(26px,7vw,40px)'; fz.style.background='#6ec6ff';
+ fz.onclick=()=>{ ac();
+  if(game.music){ tone(160,.2,'square',.1); hintFlash('Not yet! Wait for the music to stop!',1800); return; }
+  if(game.window>0){ game.window=0; game.score++;
+   $('title').textContent='FREEZE DANCE · ⭐'+game.score;
+   fans.forEach(f=>f.speed=0); sparkle(); say('You froze! Amazing!');
+   if(game.score===5){ award('freeze'); confettiBurst(50); }
+   game.resume=60; }
+ };
+ C.appendChild(fz);
+ const back=document.createElement('button'); back.className='bigbtn purple'; back.textContent='◀ GAMES';
+ back.onclick=()=>{ac();modePlay();}; C.appendChild(back);
+ setBG(); hintFlash('Dance while the music plays... FREEZE when it stops! 🧊',4000);
+}
+function stepFreeze(){
+ if(game.resume>0){ game.resume--; if(game.resume===0){ game.music=true; game.stopAt=150+Math.random()*220; game.mt=0; } return; }
+ if(game.music){
+  fans.forEach(f=>f.speed=2);
+  game.mt++;
+  if(game.mt%16===0){ tone(MELODY[game.mi%MELODY.length],.18,'triangle',.1); game.mi++; }
+  if(game.mt>game.stopAt){ game.music=false; game.window=90;
+   fans.forEach(f=>f.speed=3);
+   hintFlash('❄️ FREEZE! TAP THE BUTTON! ❄️',0); }
+ } else if(game.window>0){
+  game.window--;
+  if(game.window===0){ tone(1000,.1,'sine',.1); tone(1300,.1,'sine',.1);
+   say('hee hee, you moved!'); hintFlash('You moved! Try again! 😄',2000);
+   fans.forEach(f=>f.speed=0); game.resume=70; }
+ }
+}
+/* ---- AIRPLANE ---- */
+function gamePlane(){
+ gameKind='plane'; clearFans(); $('game').innerHTML='';
+ $('title').textContent='AIRPLANE · FLY: 0s';
+ makeFan({x:300,y:170,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ makeFan({x:700,y:170,scale:.85,theme:Math.floor(Math.random()*THEMES.length)});
+ const t=document.createElementNS(NS,'text');
+ t.setAttribute('font-size','44'); t.setAttribute('text-anchor','middle'); t.textContent='✈️';
+ t.style.cursor='pointer'; $('game').appendChild(t);
+ game={plane:{x:120,y:350,vx:1.7,vy:-1,el:t,flying:true,air:0,best:0,got:false}};
+ t.addEventListener('pointerdown',()=>{ const p=game.plane;
+  if(!p.flying){ p.flying=true; p.y=560; p.vy=-4; p.air=0; tone(700,.12,'sine',.12); say('Take off!'); } });
+ const C=$('controls'); C.innerHTML='';
+ const back=document.createElement('button'); back.className='bigbtn purple'; back.textContent='◀ GAMES';
+ back.onclick=()=>{ac();modePlay();}; C.appendChild(back);
+ setBG();
+ hintFlash('Spin the fans to keep the airplane flying! Tap fans or use the remote 🕹️',5000);
+ say('Keep the airplane in the sky! Make the fans blow!');
+}
+function stepPlane(){
+ const p=game.plane; if(!p)return;
+ if(!p.flying){ p.el.setAttribute('x',p.x); p.el.setAttribute('y',600); return; }
+ p.vy+=0.045;
+ fans.forEach(f=>{ if(Math.abs(p.x-f.x)<210 && p.y>f.y-30) p.vy-=f.speed*0.035; });
+ p.vy=Math.max(-2.4,Math.min(3.2,p.vy));
+ p.x+=p.vx; p.y+=p.vy;
+ if(p.x<50||p.x>950){ p.vx*=-1; p.el.setAttribute('transform',''); }
+ if(p.y<60){ p.y=60; p.vy=0.5; }
+ if(p.y>590){ p.flying=false; p.y=600; say('It landed! Tap the airplane!');
+  hintFlash('Tap the airplane to fly again! ✈️',3000); }
+ else { p.air++;
+  const secs=Math.floor(p.air/60);
+  if(secs!==p.best){ p.best=secs; $('title').textContent='AIRPLANE · FLY: '+secs+'s'; }
+  if(secs>=15&&!p.got){ p.got=true; award('plane'); confettiBurst(50); say('Fifteen seconds! You are a pilot!'); } }
+ p.el.setAttribute('x',p.x); p.el.setAttribute('y',p.y);
+ const sc=p.vx<0?'scale(-1,1) translate('+(-2*p.x)+',0)':'';
+ p.el.setAttribute('transform',sc);
+}
+function stepGame(){
+ if(mode!=='play'||!gameKind)return;
+ if(gameKind==='simon')stepSimon();
+ if(gameKind==='freeze')stepFreeze();
+ if(gameKind==='plane')stepPlane();
+}
+/* ============ BEDTIME ============ */
+let bedtime=false, lullT=0;
+const LULL=[392,330,294,262,294,330];
+function stepBedtime(){
+ if(!bedtime)return;
+ lullT++;
+ if(lullT%55===0) tone(LULL[(lullT/55|0)%LULL.length],.5,'sine',.05);
+}
+/* ============ LIGHTNING & RAINBOW ============ */
+let boltT=0, rainbowT=0;
+function stepStorm(){
+ if(season===3 && Math.random()<.002 && boltT<=0){ boltT=10;
+  tone(70,.7,'sawtooth',.12); setTimeout(()=>tone(55,.9,'sawtooth',.1),150); }
+ if(boltT>0){ boltT--;
+  $('sky').style.boxShadow = boltT>6? 'inset 0 0 0 2000px rgba(255,255,240,.55)':'none';
+  if(boltT===0)$('sky').style.boxShadow='none'; }
+ if(rainbowT>0){ rainbowT--; if(rainbowT===0)$('game').querySelectorAll('.rb').forEach(e=>e.remove()); }
+}
+function showRainbow(){
+ rainbowT=420;
+ const cols=['#ff5e5e','#ffb340','#ffe14d','#5ad46e','#6ec6ff','#b28dff'];
+ cols.forEach((c,i)=>{ const a=document.createElementNS(NS,'path');
+  a.setAttribute('class','rb');
+  a.setAttribute('d',`M 60 640 A ${440-i*16} ${440-i*16} 0 0 1 940 640`);
+  a.setAttribute('stroke',c); a.setAttribute('stroke-width','14'); a.setAttribute('fill','none'); a.setAttribute('opacity','.75');
+  $('game').appendChild(a); });
+ say('A rainbow!'); sparkle();
+}
+/* ============ MODE: FIX-IT ============ */
+function modeFixit(){
+ mode='fixit'; clearFans(); $('tray').innerHTML=''; showCake(false);
+ $('title').textContent='FAN HOSPITAL!'; makeDecor('sparkles'); 
+ const f=makeFan({x:500,y:210,scale:1.3,theme:Math.floor(Math.random()*THEMES.length)});
+ const nb=THEMES[f.theme].blades;
+ f.fx={ wobble: Math.random()<.8? Math.floor(Math.random()*nb) : null,
+        squeak: Math.random()<.6, flicker: Math.random()<.6, done:false };
+ if(f.fx.wobble===null && !f.fx.squeak && !f.fx.flicker) f.fx.wobble=0;
+ f.light=true; refreshFan(f); setBG();
+ say('Oh no! This fan feels sick!');
+ const probs=[]; if(f.fx.wobble!==null)probs.push('a droopy blade');
+ if(f.fx.squeak)probs.push('a squeak'); if(f.fx.flicker)probs.push('a blinky light');
+ hintFlash('This fan has '+probs.join(' and ')+'! Tap the sick parts! 🔧',0);
+ const C=$('controls'); C.innerHTML='';
+ const nx=document.createElement('button'); nx.className='bigbtn party'; nx.id='nextPatient';
+ nx.textContent='🚑 NEXT PATIENT!'; nx.style.display='none'; nx.style.fontSize='clamp(20px,5vw,30px)';
+ nx.onclick=()=>{ ac(); sparkle(); modeFixit(); };
+ C.appendChild(nx);
+ const bye=document.createElement('button'); bye.className='bigbtn'; bye.textContent='💡';
+ bye.onclick=()=>{ac();toggleLight(f);}; C.appendChild(bye);
+}
+/* ============ BIRTHDAY CAKE ============ */
+function cakeButton(){
+ const b=document.createElement('button'); b.className='bigbtn'; b.textContent='🎂'; b.style.background='#ffc7da';
+ b.onclick=()=>{ ac(); showCake(!cakeOn); b.classList.toggle('on',cakeOn);
+  if(cakeOn){ hintFlash('Rocket speed blows out the candles! 🚀',4000); say('Blow out the candles!'); } };
+ return b;
+}
+function showCake(on){
+ cakeOn=on; blowTimer=0; const C=$('cake'); C.innerHTML='';
+ if(!on)return;
+ candles=[1,1,1,1];
+ let h='<g transform="translate(500,585)">';
+ h+='<rect x="-90" y="-34" width="180" height="34" rx="10" fill="#ff8fb1" stroke="#c2557f" stroke-width="4"/>';
+ h+='<rect x="-70" y="-58" width="140" height="26" rx="9" fill="#ffe14d" stroke="#d9a520" stroke-width="4"/>';
+ h+='<path d="M -90 -34 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0 q 10 10 20 0" stroke="#fff" stroke-width="5" fill="none"/>';
+ for(let i=0;i<4;i++){ const x=-48+i*32;
+  h+=`<rect x="${x-4}" y="-84" width="8" height="26" fill="${['#6ec6ff','#b28dff','#5ad46e','#ff6b6b'][i]}" stroke="#26221a" stroke-width="2"/>`;
+  h+=`<g class="flame" data-i="${i}" transform="translate(${x},-88)"><ellipse cx="0" cy="-6" rx="6" ry="11" fill="#ffb340"/><ellipse cx="0" cy="-4" rx="3" ry="6" fill="#ffe98a"/></g>`;
+ }
+ h+='</g>';
+ C.innerHTML=h;
+ C.style.cursor='pointer';
+ C.onclick=null;
+ C.addEventListener('pointerdown',()=>{ if(candles.some(c=>!c)){ showCake(true); tone(600,.1,'sine',.1); say('Candles lit!'); } });
+}
+function stepCake(){
+ if(!cakeOn)return;
+ const wind=Math.max(0,...fans.map(f=>f.speed*(f.built?1:0)),0);
+ $('cake').querySelectorAll('.flame').forEach(fl=>{
+  const i=+fl.dataset.i; if(!candles[i]){ fl.setAttribute('opacity','0'); return; }
+  fl.setAttribute('opacity','1');
+  const flick=Math.sin(Date.now()/60+i)*3;
+  fl.setAttribute('transform',`translate(${-48+i*32},-88) skewX(${-wind*7+flick})`);
+ });
+ if(wind===3 && candles.some(c=>c)){
+  blowTimer++;
+  if(blowTimer>40){ blowTimer=0;
+   const i=candles.findIndex(c=>c); candles[i]=0;
+   tone(200,.25,'sine',.14);
+   if(!candles.some(c=>c)){ confettiBurst(50); partyTune(); say('Happy birthday!'); award('candles');
+    hintFlash('You blew them all out! Tap the cake to light them again! 🎂',4500); }
+  }
+ } else if(wind<3) blowTimer=0;
+}
+/* ============ WEATHER PARTICLES ============ */
+function spawnP(){
+ const t=season; // 1 leaf 2 snow 3 rain
+ const p={t, x:20+Math.random()*960, y:-20, vx:(Math.random()-.5)*.6,
+   vy: t===3? 7+Math.random()*3 : .5+Math.random()*.6, rot:Math.random()*360, sw:Math.random()*100};
+ if(t===3){ const e=document.createElementNS(NS,'line');
+   e.setAttribute('stroke','rgba(190,220,255,.8)'); e.setAttribute('stroke-width','3'); e.setAttribute('stroke-linecap','round');
+   p.e=e; }
+ else { const e=document.createElementNS(NS,'text');
+   e.setAttribute('font-size', t===1? 26 : 20); e.textContent = t===1?'🍂':'❄️'; p.e=e; }
+ $('particles').appendChild(p.e); particles.push(p);
+}
+function stepParticles(){
+ const caps={1:14,2:26,3:42};
+ if(season>0 && particles.length<caps[season] && Math.random()<(season===3?.6:.14)) spawnP();
+ for(let i=particles.length-1;i>=0;i--){
+  const p=particles[i];
+  if(p.t!==season){ p.e.remove(); particles.splice(i,1); continue; }
+  if(p.t!==3){
+   fans.forEach(f=>{ if(!f.speed)return; const dx=p.x-f.x, dy=p.y-f.y;
+    if(Math.abs(dx)<220*f.scale && dy>-20 && dy<280){ p.vx+=Math.sign(dx||1)*.05*f.speed; p.vy+=.01*f.speed; } });
+   p.vx*=.985; p.x+=p.vx+Math.sin((p.y+p.sw)/40)*.6; p.y+=p.vy; p.rot+=p.vx*4+1;
+   p.e.setAttribute('x',p.x); p.e.setAttribute('y',p.y);
+   p.e.setAttribute('transform',`rotate(${p.rot} ${p.x} ${p.y})`);
+  } else {
+   p.x+=p.vx; p.y+=p.vy;
+   p.e.setAttribute('x1',p.x); p.e.setAttribute('y1',p.y);
+   p.e.setAttribute('x2',p.x-1.5); p.e.setAttribute('y2',p.y-14);
+  }
+  if(p.y>660||p.x<-40||p.x>1040){ p.e.remove(); particles.splice(i,1); }
+ }
+}
+/* ============ REMOTE & NIGHT ============ */
+$('remoteToggle').onclick=()=>{ ac(); const r=$('remote');
+ r.classList.toggle('show'); $('remoteToggle').classList.toggle('on');
+ tone(r.classList.contains('show')?900:500,.12,'sine',.12);
+ if(r.classList.contains('show')) hintFlash('The remote controls EVERY fan! 📺',3200); };
+$('remote').querySelectorAll('button').forEach(b=>{
+ b.onclick=()=>{ ac(); const r=b.dataset.r;
+  const targets=fans.filter(f=>f.built);
+  if(!targets.length){ hintFlash('Build the fan first! ⬇'); return; }
+  if(r[0]==='s'){ const n=+r[1];
+    if(targets.some(f=>f.fx&&!f.fx.done)){ hintFlash('Fix me first! 🔧'); return; }
+    targets.forEach(f=>f.speed=n); boop(n); announceSpeed(n);
+    if(n===3){ confettiBurst(50); if(mode==='party')partyTune(); } }
+  if(r==='light'){ const on=!targets[0].light;
+    targets.forEach(f=>{f.light=on; refreshFan(f);}); tone(on?880:440,.15,'sine',.12); setBG();
+    if(night&&on)award('night-light'); }
+  if(r==='rev'){ targets.forEach(f=>f.dir*=-1); tone(260,.2,'triangle',.12);
+    award('backwards'); say('backwards!'); hintFlash('Backwards! 🔄',2000); }
+  syncGlobalUI(); };
+});
+$('nightToggle').onclick=()=>{ ac(); night=!night;
+ $('nightToggle').classList.toggle('on',night);
+ $('nightToggle').textContent=night?'☀️':'🌙';
+ tone(night?330:660,.2,'sine',.12);
+ fans.forEach(refreshFan); setBG();
+ hintFlash(night?'Night time! Pull the light chains! 💡':'Good morning! ☀️',3000); };
+$('seasonToggle').onclick=()=>{ ac(); const prev=season; season=(season+1)%4;
+ if(prev===3&&season===0) showRainbow();
+ $('seasonToggle').textContent=SEASONS[season].ic; tone(500+season*120,.14,'sine',.12);
+ setBG();
+ const m=['Sunny day! ☀️','Falling leaves! The fans blow them! 🍂','Snow day! Real fans go backwards in winter — try ↔️!','Rainy day! 🌧️'][season];
+ hintFlash(m,3600); say(['sunny','autumn','winter','rainy'][season]); };
+$('stickerToggle').onclick=()=>{ ac(); renderStickers();
+ $('stickerPanel').classList.add('show'); sparkle(); };
+$('stickerClose').onclick=()=>{ ac(); $('stickerPanel').classList.remove('show'); popSnd(); };
+$('talkToggle').classList.add('on');
+$('talkToggle').onclick=()=>{ ac(); talkOn=!talkOn; $('talkToggle').classList.toggle('on',talkOn);
+ if(talkOn)say('I can talk!'); else try{speechSynthesis.cancel();}catch(e){} tone(talkOn?800:400,.12,'sine',.1); };
+$('bedToggle').onclick=()=>{ ac(); bedtime=!bedtime;
+ $('bedToggle').classList.toggle('on',bedtime);
+ $('bedToggle').textContent=bedtime?'🌞':'😴';
+ if(bedtime){ night=true; $('nightToggle').classList.add('on'); $('nightToggle').textContent='☀️';
+   fans.forEach(f=>{ if(f.built&&!(f.fx&&!f.fx.done))f.speed=Math.min(f.speed||1,1); refreshFan(f); });
+   setBG(); say('Sleepy time. Good night, fans.'); hintFlash('Shhh... bedtime mode 😴',3000); }
+ else { night=false; $('nightToggle').classList.remove('on'); $('nightToggle').textContent='🌙';
+   fans.forEach(refreshFan); setBG(); say('Good morning!'); } };
+/* photo room */
+function applyPhoto(url){
+ if(url){ $('room').style.backgroundImage=`linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15)),url(${url})`;
+  $('room').style.backgroundSize='cover'; $('room').style.backgroundPosition='center';
+  $('photoToggle').classList.add('on'); }
+ else { $('room').style.backgroundImage=''; $('photoToggle').classList.remove('on'); setBG(); }
+}
+let roomPhoto=null;
+try{ roomPhoto=localStorage.getItem('fanFriendsRoom'); }catch(e){}
+if(roomPhoto)applyPhoto(roomPhoto);
+$('photoToggle').onclick=()=>{ ac();
+ if(roomPhoto){ roomPhoto=null; try{localStorage.removeItem('fanFriendsRoom');}catch(e){}
+  applyPhoto(null); say('Photo off!'); return; }
+ $('photoIn').click(); };
+$('photoIn').addEventListener('change',e=>{
+ const file=e.target.files&&e.target.files[0]; if(!file)return;
+ const rd=new FileReader();
+ rd.onload=()=>{ const img=new Image();
+  img.onload=()=>{ const cv=document.createElement('canvas');
+   const sc=Math.min(1, 900/img.width);
+   cv.width=img.width*sc; cv.height=img.height*sc;
+   cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+   roomPhoto=cv.toDataURL('image/jpeg',.7);
+   try{localStorage.setItem('fanFriendsRoom',roomPhoto);}catch(e){}
+   applyPhoto(roomPhoto); sparkle(); say('Your room!'); };
+  img.src=rd.result; };
+ rd.readAsDataURL(file); e.target.value=''; });
+modeBuild(); loop();
+
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+document.addEventListener('gesturestart', e=>e.preventDefault());
+document.addEventListener('touchmove', e=>{ if(e.scale && e.scale!==1) e.preventDefault(); }, {passive:false});
+
+</script>
+</body>
+</html>
