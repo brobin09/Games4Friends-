@@ -1,0 +1,36 @@
+MAKING THE VOICE SOUND HUMAN
+============================
+
+Three things changed, in order of how much they help.
+
+1. RECORD YOUR OWN VOICE  (the real fix)
+   Tap the 🎙️ button in the top bar. A grown-up gate appears (tap the number it
+   asks for) so a toddler cannot wander in. Then for each line: tap Rec, say it,
+   tap Stop. It plays back immediately. Recordings are saved on the iPad in
+   IndexedDB and survive closing the app.
+
+   If you only record a few, record ONE through FIVE. Those are said constantly,
+   and they are what the countdown uses when the candles go out.
+
+   The game plays your recording whenever one exists and falls back to the
+   synthetic voice when it does not. You can mix and match freely.
+
+2. DOWNLOAD A BETTER SYSTEM VOICE  (do this on the iPad, one time)
+   Settings → Accessibility → Spoken Content → Voices → English
+   Download one of the ENHANCED or PREMIUM voices (Samantha (Enhanced) is the
+   safe pick). The default "compact" voices are the robotic ones; the enhanced
+   ones are several hundred megabytes of real recorded speech and sound
+   dramatically better. The game automatically scores and picks the best voice
+   installed, and de-prioritizes anything named Compact or Eloquence.
+
+   You can also override the pick manually in the 🎙️ studio, with a Test button.
+
+3. PROSODY  (already applied, no setup)
+   - Long lines are split at sentence breaks and spoken as separate utterances
+     with a pause between, instead of one flat run-on contour.
+   - Counting now climbs in pitch and slows down, the way people actually count.
+   - Exclamations lift the pitch; questions drop and slow.
+   These are the only levers the Web Speech API gives; there is no SSML on iOS.
+
+DEPLOY
+   Cache version is now count-with-me-v2, so the iPad picks up the update.

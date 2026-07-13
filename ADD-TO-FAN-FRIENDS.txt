@@ -1,0 +1,49 @@
+ADDING THE "COUNT WITH ME" LAUNCHER TO FAN FRIENDS
+==================================================
+
+1. Put this whole folder in your Fan Friends repo as a subfolder named  count/
+   your-repo/
+     index.html            <- Fan Friends
+     manifest.webmanifest
+     sw.js
+     icon-*.png
+     count/                <- NEW: drop all 6 files from this zip in here
+       index.html
+       manifest.webmanifest
+       sw.js
+       icon-180.png
+       icon-192.png
+       icon-512.png
+
+2. In the Fan Friends index.html, paste this just before  </body>
+   It adds a floating cake button in the top-left that jumps to the math games.
+
+<style>
+  #countlink{
+    position:fixed; left:10px; top:calc(env(safe-area-inset-top) + 10px);
+    z-index:60; width:64px; height:64px; border-radius:50%;
+    border:5px solid #26221a; background:#ffd166; box-shadow:0 5px 0 #26221a;
+    font-size:30px; line-height:1; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; font-family:inherit;
+  }
+  #countlink:active{transform:translateY(3px); box-shadow:0 2px 0 #26221a;}
+</style>
+<button id="countlink" title="Count with Me">🎂</button>
+<script>
+(function(){
+  var b = document.getElementById('countlink'), lock = false;
+  function go(){ window.location.href = 'count/'; }
+  b.addEventListener('touchend', function(e){ e.preventDefault(); lock = true; go(); }, {passive:false});
+  b.addEventListener('click', function(){ if(!lock) go(); });
+})();
+</script>
+
+3. Bump the Fan Friends sw.js cache name (e.g. fan-friends-v5 -> v6) so the
+   iPad actually picks up the change instead of serving the old cached page.
+
+4. On the iPad, open  brobin09.github.io/<repo>/count/  in Safari ->
+   Share -> Add to Home Screen. You get a separate cake icon.
+   (Or just reach it through the cake button inside Fan Friends.)
+
+The two service workers do not collide: Fan Friends' sw.js controls the root,
+count/sw.js only controls /count/.
