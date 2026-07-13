@@ -112,8 +112,13 @@
   .cake{position:relative; display:flex; flex-direction:column; align-items:center;}
   .candles{
     display:flex; align-items:flex-end; justify-content:center; gap:12px;
-    min-height:112px; padding-bottom:2px;
+    min-height:112px; padding-bottom:2px; flex-wrap:nowrap;
   }
+  /* squeeze the candles once there are a lot of them, so ten still fit the cake */
+  .candles.many{gap:6px;}
+  .candles.many .candle{width:16px; height:60px; border-width:3px;}
+  .candles.many .flame{width:18px; height:24px; margin-left:-9px; top:-26px;}
+  .candles.many .tag{width:34px; height:34px; font-size:19px; top:-56px;}
   .candle{
     position:relative; width:24px; height:74px; border:4px solid var(--ink);
     border-radius:7px; cursor:pointer; flex:0 0 auto;
@@ -236,6 +241,14 @@
   @keyframes pop{to{transform:scale(2.2); opacity:0;}}
 
   /* counter chip */
+  #timer{
+    position:absolute; top:6px; right:8px;
+    background:var(--cream); border:5px solid var(--ink); border-radius:20px;
+    padding:4px 14px; font-weight:900; font-size:clamp(18px,4vw,26px);
+    box-shadow:0 5px 0 var(--ink); display:none; z-index:5; min-width:64px; text-align:center;
+  }
+  #timer.show{display:block;}
+  #timer.low{background:var(--red); color:#fff; animation:pulse .4s infinite alternate;}
   #counter{
     position:absolute; top:6px; left:50%; transform:translateX(-50%);
     background:var(--cream); border:5px solid var(--ink); border-radius:20px;
@@ -330,7 +343,6 @@
 <div id="app">
   <div id="topbar">
     <button class="tbtn" id="homebtn">🏠</button>
-    <button class="tbtn" id="fanbtn" title="Fan Friends">🌀</button>
     <div id="stickerbar"></div>
     <div id="modewrap">
       <button class="tbtn" id="studiobtn" title="Record your voice">🎙️</button>
@@ -348,7 +360,7 @@
 
   <div class="screen" id="play">
     <div id="prompt"></div>
-    <div id="stage"><div id="counter"></div></div>
+    <div id="stage"><div id="counter"></div><div id="timer"></div></div>
     <div id="controls"></div>
   </div>
 </div>
@@ -394,7 +406,7 @@
 /* ============ basics ============ */
 var $ = function(s){ return document.querySelector(s); };
 var stage = $("#stage"), promptEl = $("#prompt"), controls = $("#controls"),
-    counter = $("#counter"), bignum = $("#bignum"), cards = $("#cards");
+    counter = $("#counter"), timerEl = $("#timer"), bignum = $("#bignum"), cards = $("#cards");
 
 function bindTap(el, fn){
   var lock = false;
@@ -746,7 +758,7 @@ function makeCake(n){
   var wrap = document.createElement("div");
   wrap.className = "cake";
   var row = document.createElement("div");
-  row.className = "candles";
+  row.className = "candles" + (n > 6 ? " many" : "");
   var list = [];
   for(var i=0;i<n;i++){
     var c = makeCandle(i);
@@ -801,8 +813,9 @@ function clearStage(){
   stopLoops();
   disarmBlow();
   var kids = [].slice.call(stage.children);
-  kids.forEach(function(k){ if(k.id !== "counter") k.remove(); });
+  kids.forEach(function(k){ if(k.id !== "counter" && k.id !== "timer") k.remove(); });
   counter.classList.remove("show");
+  stopTimer();
   controls.innerHTML = "";
   promptEl.textContent = "";
 }
@@ -818,6 +831,27 @@ function setCounter(n){
   counter.textContent = String(n);
   counter.classList.add("show");
 }
+var timerId = null;
+function startTimer(seconds, onOut){
+  stopTimer();
+  var left = seconds;
+  timerEl.classList.add("show");
+  paint();
+  timerId = setInterval(function(){
+    left--;
+    paint();
+    if(left <= 0){ stopTimer(); if(onOut) onOut(); }
+  }, 1000);
+  function paint(){
+    timerEl.textContent = left + "s";
+    timerEl.classList.toggle("low", left <= 5);
+  }
+}
+function stopTimer(){
+  if(timerId){ clearInterval(timerId); timerId = null; }
+  timerEl.classList.remove("show", "low");
+}
+
 var loops = [];
 function stopLoops(){
   loops.forEach(function(id){ cancelAnimationFrame(id); });
@@ -826,9 +860,10 @@ function stopLoops(){
 function rnd(a, b){ return a + Math.floor(Math.random() * (b - a + 1)); }
 
 /* ============ GAME 1: Count the Candles ============ */
+var cakeTarget = 0;
 function gameCake(){
   clearStage();
-  var target = mode === "little" ? 3 : rnd(2, 5);
+  var target = mode === "little" ? 3 : (cakeTarget || 3);
   round();
 
   function round(){
@@ -906,7 +941,8 @@ function gameCake(){
             }, 1700);
           } else {
             btn("More! 🎂", "next", function(){
-              target = target >= 5 ? rnd(2, 5) : target + 1;
+              target = target >= 10 ? rnd(4, 10) : target + 1;   // climbs all the way to ten
+              cakeTarget = target;
               round();
             });
           }
@@ -927,7 +963,8 @@ function gameCake(){
 /* ============ GAME 2: Trick Candles ============ */
 function gameTrick(){
   clearStage();
-  var target = rnd(3, 5), tricks = 2;
+  var target = mode === "little" ? 3 : rnd(4, 8);
+  var tricks = mode === "little" ? 1 : 3;
   round(target, tricks);
 
   function round(n, tricksLeft){
@@ -1042,7 +1079,7 @@ function gameTrick(){
 /* ============ GAME 3: Birthday Parade ============ */
 function gameParade(){
   clearStage();
-  var age = 1;
+  var age = 1, topAge = mode === "little" ? 5 : 10;
   round();
 
   function round(){
@@ -1057,7 +1094,7 @@ function gameParade(){
     promptEl.textContent = "This birthday cake needs " + age + "!";
     say("Put " + word(age) + (age === 1 ? " candle" : " candles") + " on the cake.");
 
-    for(var i=0;i<6;i++){
+    for(var i=0;i<topAge+2;i++){
       (function(i){
         var t = makeCandle(i);
         t.style.height = "56px";
@@ -1070,6 +1107,7 @@ function gameParade(){
           var c = makeCandle(placed);
           cake.row.appendChild(c);
           placed++;
+          cake.row.classList.toggle("many", placed > 6);
           c.classList.add("counted");
           c.querySelector(".tag").textContent = String(placed);
           setCounter(placed);
@@ -1104,7 +1142,7 @@ function gameParade(){
             cheer(); confetti(); award();
             say("All out! Happy birthday!", null, "allout");
             promptEl.textContent = "Happy birthday! 🎉";
-            if(age >= 5){
+            if(age >= topAge){
               btn("Start over 🎂", "next", function(){ age = 1; round(); });
             } else {
               btn("Next birthday →", "next", function(){ age++; round(); });
@@ -1125,9 +1163,10 @@ function gameParade(){
 }
 
 /* ============ GAME 4: Build the Fan ============ */
+var bladeTarget = 0;
 function gameBlades(){
   clearStage();
-  var target = mode === "little" ? 4 : rnd(2, 5);
+  var target = mode === "little" ? 4 : (bladeTarget || 3);
   round();
 
   function round(){
@@ -1170,7 +1209,10 @@ function gameBlades(){
               say(word(total), function(){ say("Yay! You did it!", null, "yay"); });
               controls.innerHTML = "";
               btn(mode === "little" ? "Again 🌀" : "Next fan →", "next", function(){
-                if(mode === "big") target = target >= 5 ? rnd(2, 5) : target + 1;
+                if(mode === "big"){
+                  target = target >= 8 ? rnd(3, 8) : target + 1;   // up to eight blades
+                  bladeTarget = target;
+                }
                 round();
               });
             }, 400);
@@ -1182,56 +1224,99 @@ function gameBlades(){
 }
 
 /* ============ GAME 5: Catch the Leaves ============ */
+// little: free catching, celebrates at ten, then resets. no clock, no way to lose.
+// big:    a real challenge. the target ramps 3 -> 50 across rounds, and there is a
+//         clock. the time budget is derived from the target rather than guessed:
+//         1.15s per leaf plus a 7s cushion, and the spawn rate scales with it so
+//         the sky always holds enough leaves to actually finish.
+var leafTarget = 0;
 function gameLeaves(){
   clearStage();
-  var target = mode === "little" ? 0 : rnd(1, 4);
-  var caught = 0, running = true;
+  var little = mode === "little";
+  var target = little ? 10 : (leafTarget || 3);
+  var caught = 0, running = true, missed = 0;
   var LEAVES = ["🍁","🍂","🍃"];
-  promptEl.textContent = mode === "little" ? "Catch the leaves!" : "Catch " + target + "!";
-  if(mode === "little") say("Catch the leaves!", null, "catch");
-  else say("Catch " + word(target) + (target === 1 ? " leaf!" : " leaves!"));
-  setCounter(0);
 
-  var live = [];
-  var lastSpawn = 0;
+  var spawnGap = little ? 900 : Math.max(210, 780 - target * 11);
+  var budget   = Math.round(target * 1.15 + 7);
+  var fall     = little ? 1.3 : 1.5 + Math.min(1.1, target / 45);
+
+  setCounter(0);
+  if(little){
+    promptEl.textContent = "Catch the leaves!";
+    say("Catch the leaves!", null, "catch");
+  } else {
+    promptEl.textContent = "Catch exactly " + target + "!";
+    say("Catch " + word(target) + (target === 1 ? " leaf!" : " leaves!"));
+    startTimer(budget, timeUp);
+  }
+
+  var live = [], lastSpawn = 0;
+
+  function finish(msg, spoken, win){
+    running = false;
+    stopTimer();
+    promptEl.textContent = msg;
+    controls.innerHTML = "";
+    if(win){
+      cheer(); confetti(); award();
+      say(spoken, null, "yay");
+      btn("Next →", "next", function(){
+        leafTarget = target >= 50 ? 3 : Math.min(50, target + Math.max(2, Math.round(target * 0.6)));
+        gameLeaves();
+      });
+    } else {
+      nudge();
+      say(spoken, null, "tryagain");
+      btn("Try again 🍁", "next", function(){ gameLeaves(); });
+    }
+  }
+  function timeUp(){
+    if(!running) return;
+    finish("Time! You got " + caught + " of " + target + ".",
+           "Time is up! Try again!", false);
+  }
 
   function spawn(){
     var d = document.createElement("div");
     d.className = "leaf";
     d.textContent = LEAVES[rnd(0, 2)];
-    var x = 20 + Math.random() * (stage.clientWidth - 80);
+    var x = 20 + Math.random() * Math.max(60, stage.clientWidth - 80);
     d.style.left = x + "px";
     d.style.top = "-60px";
-    d.vy = 0.9 + Math.random() * 0.8;
-    d.y = -60;
-    d.ph = Math.random() * 6.28;
-    d.x0 = x;
+    d.vy = fall * (0.85 + Math.random() * 0.5);
+    d.y = -60; d.ph = Math.random() * 6.28;
     stage.appendChild(d);
     bindTap(d, function(){
       ac();
-      if(d.classList.contains("caught")) return;
+      if(d.classList.contains("caught") || !running) return;
       d.classList.add("caught");
       caught++;
       setCounter(caught);
-      blip(caught); popNum(caught);
+      blip(Math.min(10, caught));
       setTimeout(function(){ d.remove(); }, 380);
-      if(mode === "little"){ say(word(caught)); return; }
-      if(caught === target){
-        running = false;
-        say(word(target), function(){ say("Yay! You did it!", null, "yay"); });
-        cheer(); confetti(); award();
-        promptEl.textContent = "You caught " + target + "! 🎉";
-        controls.innerHTML = "";
-        btn("Again 🍁", "next", function(){ gameLeaves(); });
-      } else if(caught > target){
-        running = false;
-        nudge();
-        say("That is " + word(caught) + ". We needed " + word(target) + ".", function(){ say("Try again!", null, "tryagain"); });
-        promptEl.textContent = "That's " + caught + ", we needed " + target + ". Try again!";
-        controls.innerHTML = "";
-        btn("Try again 🍁", "next", function(){ gameLeaves(); });
-      } else {
+
+      if(little){
         say(word(caught));
+        if(caught >= 10){
+          running = false;
+          cheer(); confetti(); award(); popNum(10);
+          promptEl.textContent = "Ten! 🎉";
+          setTimeout(function(){ gameLeaves(); }, 2200);
+        }
+        return;
+      }
+      if(caught === target){
+        popNum(caught);
+        finish("You caught " + target + "! 🎉", "Yay! You did it!", true);
+      } else if(caught > target){
+        finish("That's " + caught + " — we needed " + target + ".", "Try again!", false);
+      } else if(target <= 10){
+        say(word(caught));            // small targets: count every one out loud
+        popNum(caught);
+      } else if(caught % 5 === 0){
+        say(String(caught));          // big targets: call out every fifth
+        popNum(caught);
       }
     });
     live.push(d);
@@ -1239,7 +1324,7 @@ function gameLeaves(){
 
   function tick(t){
     if(running){
-      if(t - lastSpawn > 850){ lastSpawn = t; spawn(); }
+      if(t - lastSpawn > spawnGap){ lastSpawn = t; spawn(); }
       for(var i=live.length-1;i>=0;i--){
         var d = live[i];
         if(!d.isConnected){ live.splice(i,1); continue; }
@@ -1247,7 +1332,7 @@ function gameLeaves(){
         d.y += d.vy * 1.6;
         d.ph += 0.05;
         d.style.transform = "translate(" + Math.sin(d.ph) * 26 + "px," + d.y + "px) rotate(" + Math.sin(d.ph) * 25 + "deg)";
-        if(d.y > stage.clientHeight + 40){ d.remove(); live.splice(i,1); }
+        if(d.y > stage.clientHeight + 40){ d.remove(); live.splice(i,1); missed++; }
       }
     }
     loops.push(requestAnimationFrame(tick));
@@ -1256,51 +1341,79 @@ function gameLeaves(){
 }
 
 /* ============ GAME 6: Shape Blades ============ */
+// Twelve shapes now, drawn as SVG so they are all crisp and all hit-testable.
+// Big mode shows four choices and pulls from the whole set, including the pairs
+// that are genuinely easy to confuse (square/diamond, pentagon/hexagon, oval/circle).
+var SHAPES = [
+  {k:"circle",    n:"circle",    svg:'<circle cx="50" cy="50" r="42"/>'},
+  {k:"square",    n:"square",    svg:'<rect x="10" y="10" width="80" height="80" rx="6"/>'},
+  {k:"triangle",  n:"triangle",  svg:'<polygon points="50,8 92,88 8,88"/>'},
+  {k:"star",      n:"star",      svg:'<polygon points="50,5 61,38 96,38 68,59 79,92 50,71 21,92 32,59 4,38 39,38"/>'},
+  {k:"heart",     n:"heart",     svg:'<path d="M50 90 C10 62 8 34 26 22 C38 14 50 22 50 34 C50 22 62 14 74 22 C92 34 90 62 50 90 Z"/>'},
+  {k:"diamond",   n:"diamond",   svg:'<polygon points="50,6 94,50 50,94 6,50"/>'},
+  {k:"oval",      n:"oval",      svg:'<ellipse cx="50" cy="50" rx="44" ry="28"/>'},
+  {k:"pentagon",  n:"pentagon",  svg:'<polygon points="50,6 94,38 77,90 23,90 6,38"/>'},
+  {k:"hexagon",   n:"hexagon",   svg:'<polygon points="28,10 72,10 94,50 72,90 28,90 6,50"/>'},
+  {k:"crescent",  n:"moon",      svg:'<path d="M66 8 A46 46 0 1 0 66 92 A36 36 0 1 1 66 8 Z"/>'},
+  {k:"cross",     n:"cross",     svg:'<polygon points="36,8 64,8 64,36 92,36 92,64 64,64 64,92 36,92 36,64 8,64 8,36 36,36"/>'},
+  {k:"arrow",     n:"arrow",     svg:'<polygon points="50,6 90,46 66,46 66,94 34,94 34,46 10,46"/>'}
+];
+function shapeSVG(shape, fill, size){
+  return '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" ' +
+         'style="display:block"><g fill="' + fill + '" stroke="#26221a" stroke-width="6" ' +
+         'stroke-linejoin="round">' + shape.svg + '</g></svg>';
+}
+var shapeRound = 0;
 function gameShapes(){
   clearStage();
-  var SHAPES = [
-    {k:"ci", n:"circle"},
-    {k:"sq", n:"square"},
-    {k:"tr", n:"triangle"}
-  ];
-  var want = SHAPES[rnd(0, 2)];
+  var big = mode !== "little";
+  var choices = big ? (shapeRound < 2 ? 3 : shapeRound < 5 ? 4 : 5) : 3;
+  var pool = SHAPES.slice();
+  if(!big) pool = pool.slice(0, 4);            // little kids: circle, square, triangle, star
+  pool.sort(function(){ return Math.random() - 0.5; });
+  var want = pool[0];
+  var others = pool.slice(1, choices);
+
+  // the hole: same shape, drawn hollow
+  var holeWrap = document.createElement("div");
+  holeWrap.className = "row";
   var hole = document.createElement("div");
-  hole.className = "shapehole " + want.k;
-  if(want.k === "tr"){ hole.className = "shapehole"; hole.innerHTML = '<div class="tr"></div>'; }
-  var top = document.createElement("div");
-  top.className = "row";
-  top.appendChild(hole);
-  stage.appendChild(top);
+  hole.className = "shapehole";
+  hole.innerHTML = '<svg viewBox="0 0 100 100" width="86" height="86" style="display:block">' +
+                   '<g fill="rgba(255,255,255,.45)" stroke="#26221a" stroke-width="6" ' +
+                   'stroke-dasharray="10 7" stroke-linejoin="round">' + want.svg + '</g></svg>';
+  holeWrap.appendChild(hole);
+  stage.appendChild(holeWrap);
 
   promptEl.textContent = "Which blade fits the " + want.n + "?";
   say("Which blade fits the " + want.n + " hole?");
 
   var row = document.createElement("div");
   row.className = "row";
-  var order = SHAPES.slice().sort(function(){ return Math.random() - 0.5; });
-  order.forEach(function(s, i){
+  var all = [want].concat(others);
+  all.sort(function(){ return Math.random() - 0.5; });
+  all.forEach(function(sh, i){
     var o = document.createElement("div");
-    o.className = "opt " + (s.k === "tr" ? "" : s.k);
-    o.style.background = s.k === "tr" ? "transparent" : BLADE_COLORS[i];
-    if(s.k === "tr"){
-      o.style.border = "none"; o.style.boxShadow = "none";
-      var t = document.createElement("div");
-      t.className = "tr";
-      t.style.borderBottomColor = BLADE_COLORS[i];
-      o.appendChild(t);
-    }
+    o.className = "opt";
+    o.style.background = "transparent";
+    o.style.border = "none";
+    o.style.boxShadow = "none";
+    o.innerHTML = shapeSVG(sh, BLADE_COLORS[i % BLADE_COLORS.length], 84);
     bindTap(o, function(){
       ac();
-      if(s.k === want.k){
+      if(sh.k === want.k){
         sparkle(); cheer(); confetti(); award();
-        promptEl.textContent = "Yes! A " + s.n + "! 🎉";
-        say("Yes! A " + s.n + "!");
+        shapeRound++;
+        promptEl.textContent = "Yes! A " + sh.n + "! 🎉";
+        say("Yay! You did it!", null, "yay");
         controls.innerHTML = "";
         btn("Next →", "next", function(){ gameShapes(); });
       } else {
         nudge();
-        promptEl.textContent = "That's a " + s.n + ". We need a " + want.n + ".";
-        say("That is a " + s.n + ". We need a " + want.n + ".", function(){ say("Try again!", null, "tryagain"); });
+        promptEl.textContent = "That's a " + sh.n + ". We need a " + want.n + ".";
+        say("That is a " + sh.n + ". We need a " + want.n + ".", function(){
+          say("Try again!", null, "tryagain");
+        });
       }
     });
     row.appendChild(o);
@@ -1309,23 +1422,43 @@ function gameShapes(){
 }
 
 /* ============ GAME 7: What Comes Next? ============ */
+// AB is where patterning starts, but it is not where it ends. Big mode cycles
+// through the real families a kindergarten readiness check actually asks for:
+// AB, AAB, ABB, ABC, AABB, ABCC. Little mode stays on AB forever.
+var PATTERNS = [
+  {k:"AB",   seq:[0,1],       n:"AB"},
+  {k:"AAB",  seq:[0,0,1],     n:"AAB"},
+  {k:"ABB",  seq:[0,1,1],     n:"ABB"},
+  {k:"ABC",  seq:[0,1,2],     n:"ABC"},
+  {k:"AABB", seq:[0,0,1,1],   n:"AABB"},
+  {k:"ABCC", seq:[0,1,2,2],   n:"ABCC"}
+];
+var patRound = 0;
 function gamePattern(){
   clearStage();
-  var a = BLADE_COLORS[rnd(0, 5)], b;
-  do{ b = BLADE_COLORS[rnd(0, 5)]; } while(b === a);
-  var seq = [a, b, a, b, a, b];
-  var len = 5;
-  var nextColor = seq[len];
+  var big = mode !== "little";
+  var pat = big ? PATTERNS[Math.min(PATTERNS.length - 1, rnd(0, Math.min(5, 1 + Math.floor(patRound / 2))))]
+                : PATTERNS[0];
 
-  promptEl.textContent = "What comes next?";
+  // pick distinct colors for the A/B/C slots
+  var need = Math.max.apply(null, pat.seq) + 1;
+  var pal = BLADE_COLORS.slice().sort(function(){ return Math.random() - 0.5; }).slice(0, need);
+
+  // lay out enough chips that the rule is visible, then hide the next one
+  var showLen = pat.seq.length * (pat.seq.length <= 2 ? 3 : 2);
+  var full = [];
+  for(var i=0;i<showLen+1;i++){ full.push(pal[pat.seq[i % pat.seq.length]]); }
+  var answer = full[showLen];
+
+  promptEl.textContent = big ? "What comes next? (" + pat.n + ")" : "What comes next?";
   say("Look at the pattern. What comes next?", null, "whatnext");
 
   var row = document.createElement("div");
   row.className = "row";
-  for(var i=0;i<len;i++){
+  for(var j=0;j<showLen;j++){
     var c = document.createElement("div");
     c.className = "pchip";
-    c.style.background = seq[i];
+    c.style.background = full[j];
     row.appendChild(c);
   }
   var q = document.createElement("div");
@@ -1334,46 +1467,56 @@ function gamePattern(){
   row.appendChild(q);
   stage.appendChild(row);
 
-  var opts = document.createElement("div");
-  opts.className = "row";
-  var choices = [a, b];
-  var other;
-  do{ other = BLADE_COLORS[rnd(0, 5)]; } while(other === a || other === b);
-  choices.push(other);
-  choices.sort(function(){ return Math.random() - 0.5; });
-  choices.forEach(function(col){
+  // distractors: every other color in the pattern, plus a stranger
+  var opts = pal.slice();
+  var stranger;
+  do{ stranger = BLADE_COLORS[rnd(0, BLADE_COLORS.length - 1)]; } while(pal.indexOf(stranger) >= 0);
+  if(big) opts.push(stranger);
+  opts.sort(function(){ return Math.random() - 0.5; });
+
+  var orow = document.createElement("div");
+  orow.className = "row";
+  opts.forEach(function(col){
     var o = document.createElement("div");
     o.className = "opt";
     o.style.background = col;
     o.style.borderRadius = "14px";
     bindTap(o, function(){
       ac();
-      if(col === nextColor){
+      if(col === answer){
         q.textContent = "";
         q.style.background = col;
         sparkle(); cheer(); confetti(); award();
+        patRound++;
         promptEl.textContent = "That's the pattern! 🎉";
-        say("Yes! That is the pattern!");
+        say("Yay! You did it!", null, "yay");
         controls.innerHTML = "";
         btn("Next →", "next", function(){ gamePattern(); });
       } else {
         nudge();
-        say("Look at the pattern again!", function(){ say("Try again!", null, "tryagain"); });
         promptEl.textContent = "Look again — what keeps repeating?";
+        say("Look at the pattern again!", function(){ say("Try again!", null, "tryagain"); });
       }
     });
-    opts.appendChild(o);
+    orow.appendChild(o);
   });
-  stage.appendChild(opts);
+  stage.appendChild(orow);
 }
 
 /* ============ GAME 8: Which Has More? ============ */
+var moreRound = 0;
 function gameMore(){
   clearStage();
-  var x = rnd(1, 5), y;
-  do{ y = rnd(1, 5); } while(y === x);
-  promptEl.textContent = "Which fan has MORE blades?";
-  say("Which fan has more blades?", null, "whichmore");
+  var big = mode !== "little";
+  var top = big ? Math.min(10, 4 + moreRound) : 5;    // the counts climb toward ten
+  var gap = (big && moreRound > 2) ? 1 : 2;           // and the two fans get closer together
+  var x = rnd(1, top), y;
+  do{ y = rnd(1, top); } while(y === x || Math.abs(y - x) < gap);
+  // once they have the idea, flip the question. knowing "more" is not knowing "fewer".
+  var wantFewer = big && moreRound > 1 && Math.random() < 0.4;
+  promptEl.textContent = wantFewer ? "Which fan has FEWER blades?" : "Which fan has MORE blades?";
+  if(wantFewer) say("Which fan has fewer blades?");
+  else say("Which fan has more blades?", null, "whichmore");
 
   var row = document.createElement("div");
   row.className = "row";
@@ -1384,15 +1527,17 @@ function gameMore(){
     fan.style.cursor = "pointer";
     bindTap(fan, function(){
       ac();
-      var win = n === Math.max(x, y);
-      if(win){
+      var goal = wantFewer ? Math.min(x, y) : Math.max(x, y);
+      if(n === goal){
         f1.hub.textContent = String(x);
         f2.hub.textContent = String(y);
         fan.classList.add("spin");
         sparkle(); cheer(); confetti(); award();
         popNum(n);
-        promptEl.textContent = n + " is more than " + Math.min(x, y) + "! 🎉";
-        say(word(n) + " is more than " + word(Math.min(x, y)) + "!");
+        moreRound++;
+        var other = (n === x) ? y : x;
+        promptEl.textContent = n + " is " + (wantFewer ? "fewer" : "more") + " than " + other + "! 🎉";
+        say(word(n) + " is " + (wantFewer ? "fewer" : "more") + " than " + word(other) + "!");
         controls.innerHTML = "";
         btn("Next →", "next", function(){ gameMore(); });
       } else {
@@ -1412,10 +1557,10 @@ var GAMES = [
   {id:"trick",   em:"🕯️", nm:"Trick Candles",     sk:"They come back!",     ages:["big"],          go:gameTrick},
   {id:"parade",  em:"🎉", nm:"Birthday Parade",   sk:"Make the right age",  ages:["big"],          go:gameParade},
   {id:"blades",  em:"🌀", nm:"Build the Fan",     sk:"How many blades?",    ages:["little","big"], go:gameBlades},
-  {id:"leaves",  em:"🍁", nm:"Catch the Leaves",  sk:"Catch just enough",   ages:["little","big"], go:gameLeaves},
-  {id:"shapes",  em:"🔺", nm:"Shape Blades",      sk:"Find the match",      ages:["big"],          go:gameShapes},
-  {id:"pattern", em:"🟥", nm:"What Comes Next?",  sk:"Finish the pattern",  ages:["big"],          go:gamePattern},
-  {id:"more",    em:"⚖️", nm:"Which Has More?",   sk:"More or less",        ages:["big"],          go:gameMore}
+  {id:"leaves",  em:"🍁", nm:"Catch the Leaves",  sk:"Beat the clock",      ages:["little","big"], go:gameLeaves},
+  {id:"shapes",  em:"🔺", nm:"Shape Blades",      sk:"Twelve shapes",       ages:["little","big"], go:gameShapes},
+  {id:"pattern", em:"🟥", nm:"What Comes Next?",  sk:"AB, AAB, ABC...",     ages:["big"],          go:gamePattern},
+  {id:"more",    em:"⚖️", nm:"Which Has More?",   sk:"More, or fewer",      ages:["big"],          go:gameMore}
 ];
 function buildHome(){
   cards.innerHTML = "";
@@ -1442,7 +1587,6 @@ function goHome(){
   $("#home").classList.add("show");
 }
 bindTap($("#homebtn"), function(){ ac(); goHome(); });
-bindTap($("#fanbtn"), function(){ window.location.href = "index.html"; });
 
 setMode(mode);
 buildHome();
